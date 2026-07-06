@@ -1,0 +1,53 @@
+# QuantumVerse
+
+**The home for quantum artifacts — where circuits, results, and claims become shareable, runnable, and verifiable.**
+
+GitHub gave code a home. Hugging Face gave models a home. Quantum computing — thousands of researchers producing circuits, trained ansätze, benchmark results, and hardware experiments every week — still shares its work as PDFs and framework-locked zip files that stop reproducing the day the hardware is recalibrated.
+
+QuantumVerse is the missing layer: an open, community-owned platform for publishing, discovering, running, and **verifying** quantum work.
+
+📖 **Read the full vision:** [VISION.md](VISION.md) · 🌐 **Pitch site:** [`site/index.html`](site/index.html)
+
+---
+
+## The three pillars
+
+### 🗂 The Hub — *the Hugging Face analog*
+Typed, versioned, framework-agnostic artifact repos (OpenQASM 3 / QIR interchange): circuits with **Circuit Cards**, **trained VQE/QAOA parameters** (the "pretrained weights" of quantum — nobody hosts these today), Hamiltonians and benchmark instances, noise models, and compiled-circuit caches. One line to reuse anyone's work:
+
+```python
+import quantumverse as qv
+ansatz, params = qv.load("vqe/h2o-ground-state", framework="qiskit")
+```
+
+### ✅ The Verification Layer — *what GitHub and HF never needed; quantum does*
+Hardware drifts daily, so in quantum the device's state is part of the result — and most published results can't be independently reproduced. QuantumVerse makes verifiability a platform primitive:
+
+- **Experiment Capsules** — content-addressed bundles of circuit + transpilation + device calibration snapshot + raw shots + mitigation pipeline. A *git commit for a quantum experiment*: citable, forkable, replayable.
+- **Semantic circuit diffs** — ZX-calculus equivalence checking: "14 gates changed, depth −31%, circuits still equivalent."
+- **Quantum CI** — equivalence checks, resource-count regression (qubits/depth/T-count), simulator validation, optional metered runs on real QPUs.
+- **Verified leaderboards** — automated cross-hardware benchmarks anchored to signed Capsules. *Papers with Code for quantum*, machine-verified instead of self-reported.
+
+### 🎮 The Playground — *the viral surface*
+Every circuit page has a **Run** button — a WASM statevector simulator executes up to ~25 qubits in the browser, zero install. Embeddable live widgets for papers, blogs, and courses. **Circuit Golf**: competitive, auto-verified circuit optimization challenges. And a **Hardware Readiness Meter** on every algorithm: resource estimates vs. hardware roadmaps → *"runnable in ~2033."*
+
+---
+
+## Roadmap
+
+| Phase | What ships |
+|---|---|
+| **0 — Manifesto** *(now)* | This vision, the pitch site, founding contributors |
+| **1 — Hub + Playground** | Artifact repos, Circuit Cards, `quantumverse` client, in-browser simulator; seeded with the Algorithm Zoo and open benchmark sets |
+| **2 — Verification** | Capsule spec v1, semantic diffs, Quantum CI, first verified leaderboard, Circuit Golf |
+| **3 — Institution** | Provider-signed receipts, orgs, bounty marketplace, embeds, DOI minting |
+
+## Principles
+
+**Open core** (Apache-2.0, developed in the open) · **open spec first** (Capsule & Card formats published as standalone standards) · **open data** (public artifacts bulk-downloadable, no lock-in) · **community governance** (spec changes by public RFC).
+
+## Get involved
+
+Publish one artifact. Argue with the spec. Star, watch, fork. The RFCs land in this repository first.
+
+Code found its home. Models found their home. **Quantum is next.**
