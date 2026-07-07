@@ -6,7 +6,7 @@ GitHub gave code a home. Hugging Face gave models a home. Quantum computing — 
 
 QuantumVerse is the missing layer: an open, community-owned platform for publishing, discovering, running, and **verifying** quantum work.
 
-📖 **Read the full vision:** [VISION.md](VISION.md) · 🌐 **Pitch site:** [`site/index.html`](site/index.html)
+📖 **Read the full vision:** [VISION.md](VISION.md) · 🌐 **Pitch site:** [`docs/index.html`](docs/index.html) (live via GitHub Pages)
 
 ---
 
