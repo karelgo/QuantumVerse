@@ -180,20 +180,22 @@ And one structural advantage: **the field is small enough to win.** GitHub neede
 
 ## 8. Ecosystem positioning
 
-QuantumVerse complements the frameworks and hardware providers — it's the layer *between* them. Against existing platforms, the honest map:
+QuantumVerse complements the frameworks and hardware providers — it's the layer *between* them. Every pillar has prior art; the bet is that **nobody has combined them**. The honest map (each competitor owns roughly one column):
 
-| | Cloud aggregators (Strangeworks, qBraid) | Metriq | PennyLane Datasets | Algorithm Zoo | **QuantumVerse** |
-|---|---|---|---|---|---|
-| Framework-agnostic artifact hosting | — | — | PennyLane-centric | — | ✅ core |
-| Trained parameters as artifacts | — | — | partial | — | ✅ core |
-| Reproducible experiment records | — | — | — | — | ✅ **Capsules** |
-| Verified (not self-reported) benchmarks | — | self-reported | — | — | ✅ core |
-| Semantic circuit diff / quantum CI | — | — | — | — | ✅ core |
-| In-browser execution of any artifact | IDE-based | — | — | — | ✅ core |
-| Social layer (profiles, forks, orgs) | — | — | — | — | ✅ core |
-| QPU access brokering | ✅ their core | — | — | — | integrates, doesn't compete |
+| | QCR | PennyLane Datasets | Metriq | QProv | Aggregators (Strangeworks, qBraid) | **QuantumVerse** |
+|---|---|---|---|---|---|---|
+| Framework-agnostic artifact hosting | catalog | PennyLane-centric | — | — | — | ✅ core |
+| Trained parameters as first-class artifacts | — | partial | — | — | — | ✅ core |
+| Reproducible experiment records | — | — | partial | ✅ research | — | ✅ **Capsules** |
+| Verified benchmarks | — | — | ✅ community-run | — | — | ✅ core |
+| Semantic circuit diff / quantum CI | — | — | — | — | — | ✅ core |
+| In-browser execution of any artifact | — | — | — | — | IDE-based | ✅ core |
+| Social layer (profiles, forks, orgs) | — | — | — | — | — | ✅ core |
+| QPU access brokering | — | — | via providers | — | ✅ their core | integrates, doesn't compete |
 
-The aggregators sell *access*; we host *artifacts* — and route execution through them, making them partners rather than rivals. Metriq pioneered community benchmarking; we'd rather integrate and automate its mission than fragment it. The zoo is a beloved static index; QuantumVerse is what its entries link *to*.
+**[QCR](https://qcrepository.org/)** is the closest analog — a multi-framework catalog to share and reproduce circuits — but it stops at a curated index: no in-browser run, no verification, no trained parameters, no social graph. **PennyLane Datasets** hosts real quantum data (molecules, spin systems, Hamiltonians, some parameters), but team-curated and framework-centric, not a community hub. **Metriq** (Unitary Foundation) is the biggest overlap with our verification pillar and is more automated than a submissions box — `metriq-gym` dispatches benchmarks to real hardware — but it's scoped to benchmarks, not general artifacts; we'd integrate it, not fragment it. And crucially, the Capsule concept is **not new**: academic provenance systems like **[QProv](https://github.com/UST-QuAntiL/qprov)** and schemas like **QC-MM** already model the `{circuit, device, compilation, execution}` bundle — our contribution is turning that into a content-addressed, citable, forkable artifact with a platform around it. The aggregators sell *access*; we host *artifacts* and route execution through them, making them partners rather than rivals.
+
+*Full sourced analysis, including in-browser tools (IBM Composer, Quirk) and benchmark suites (MQT Bench, QASMBench, SupermarQ): [COMPETITIVE-LANDSCAPE.md](COMPETITIVE-LANDSCAPE.md).*
 
 ---
 
