@@ -127,7 +127,7 @@ header.top .wrap { display: flex; align-items: baseline; gap: 28px; flex-wrap: w
   padding: 3px 8px; border-radius: 6px;
 }
 .wordmark .name { font-family: var(--serif); font-weight: 600; font-size: 1.25rem; color: var(--ink); }
-nav.top-nav { display: flex; gap: 22px; font-family: var(--mono); font-size: .8rem; }
+nav.top-nav { display: flex; flex-wrap: wrap; gap: 10px 22px; font-family: var(--mono); font-size: .8rem; }
 nav.top-nav a { color: var(--muted); }
 nav.top-nav a:hover { color: var(--accent); }
 
@@ -266,6 +266,23 @@ nav.top-nav a:hover { color: var(--accent); }
 .loop .tag { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 8px; }
 .small-enough { font-family: var(--serif); font-size: 1.15rem; line-height: 1.55; max-width: 46em; margin-top: 44px; }
 
+/* ---------- compare matrix ---------- */
+.compare-wrap { overflow-x: auto; margin-top: 36px; border: 1px solid var(--line); border-radius: 12px; }
+.matrix { border-collapse: collapse; width: 100%; min-width: 660px; font-family: var(--mono); }
+.matrix th, .matrix td { border-bottom: 1px solid var(--line); }
+.matrix thead th { padding: 14px 10px; font-size: .72rem; font-weight: 500; color: var(--muted); text-align: center; white-space: nowrap; vertical-align: bottom; }
+.matrix thead th.qvhead { color: var(--accent); font-weight: 700; }
+.matrix .rowlab { text-align: left; padding: 12px 16px; font-size: .76rem; color: var(--ink); font-weight: 500; white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.matrix .mcell { text-align: center; padding: 12px 8px; }
+.matrix tbody tr:last-child th, .matrix tbody tr:last-child td { border-bottom: none; }
+.matrix .col-qv { background: var(--surface-2); }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; }
+.dot.full { background: var(--accent-fill); }
+.dot.part { border: 1.5px solid var(--accent-fill); background: linear-gradient(90deg, var(--accent-fill) 50%, transparent 50%); }
+.dot.none { border-radius: 0; background: linear-gradient(var(--line), var(--line)) center / 12px 2px no-repeat; }
+.matrix-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; font-family: var(--mono); font-size: .72rem; color: var(--muted); align-items: center; }
+.matrix-legend span { display: inline-flex; align-items: center; gap: 8px; }
+
 /* ---------- frontiers ---------- */
 .frontiers-featured { display: grid; grid-template-columns: 1.02fr 1fr; gap: clamp(32px, 5vw, 60px); align-items: center; margin-top: 40px; }
 .frontiers-featured > div { min-width: 0; }
@@ -341,6 +358,7 @@ h2.section-title { font-size: clamp(1.65rem, 3.2vw, 2.3rem); font-weight: 600; }
     </div>
     <nav class="top-nav" aria-label="Page">
       <a href="#pillars">Pillars</a>
+      <a href="#compare">Compare</a>
       <a href="#why">Why now</a>
       <a href="#frontiers">Frontiers</a>
       <a href="#roadmap">Roadmap</a>
@@ -525,6 +543,24 @@ H = qv.load(<span class="st">"instances/lih-sto3g"</span>)</div>
         <p class="vis-caption">GitHub shows you code. QuantumVerse shows you when your code becomes runnable.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ============ COMPARE ============ -->
+<section id="compare">
+  <div class="wrap">
+    <p class="eyebrow">How we're different</p>
+    <h2 class="section-title">Everyone owns a column. We span the rows.</h2>
+    <p class="muted" style="max-width: 62ch; margin-top: 10px;">Every capability below already exists somewhere — the space is not empty. But no platform combines them; each competitor occupies a cell or two. The integration is the moat, not any single feature. <a href="https://github.com/karelgo/QuantumVerse#repository-map">Full sourced analysis →</a></p>
+    <div class="compare-wrap">
+      <div id="matrix"></div>
+    </div>
+    <div class="matrix-legend">
+      <span><span class="dot full"></span> core capability</span>
+      <span><span class="dot part"></span> partial</span>
+      <span><span class="dot none"></span> not offered</span>
+    </div>
+    <p class="small-enough">No competitor fills more than a cell or two. The Capsule concept even has academic prior art (QProv) — our contribution is productizing it. QuantumVerse's bet isn't a single feature nobody thought of; it's the <strong>row-spanning whole</strong> nobody has assembled.</p>
   </div>
 </section>
 
@@ -1000,6 +1036,47 @@ H = qv.load(<span class="st">"instances/lih-sto3g"</span>)</div>
     setReadout(N - 1);
   });
   setReadout(N - 1);   // default: latest day
+})();
+</script>
+
+<script>
+/* Comparison matrix: capability (rows) x platform (columns). States mirror
+   COMPETITIVE-LANDSCAPE.md — F = core, p = partial, _ = not offered. Built as
+   a semantic table so identity is never carried by color alone. */
+(function () {
+  'use strict';
+  var mount = document.getElementById('matrix');
+  if (!mount) return;
+  var platforms = ['QCR', 'PennyLane', 'Metriq', 'QProv', 'Aggregators', 'QuantumVerse'];
+  var rows = [
+    ['Framework-agnostic hosting',        'p', 'p', '_', '_', '_', 'F'],
+    ['Trained parameters as artifacts',   '_', 'p', '_', '_', '_', 'F'],
+    ['Reproducible records (capsules)',   '_', '_', 'p', 'p', '_', 'F'],
+    ['Verified benchmarks',               '_', '_', 'F', '_', '_', 'F'],
+    ['Semantic diff / quantum CI',        '_', '_', '_', '_', '_', 'F'],
+    ['In-browser execution of any artifact', '_', '_', '_', '_', 'p', 'F'],
+    ['Social layer (profiles, forks, orgs)', '_', '_', '_', '_', '_', 'F'],
+    ['QPU access brokering',              '_', '_', '_', '_', 'F', 'p']
+  ];
+  var titleMap = { F: 'core', p: 'partial', '_': 'not offered' };
+  function cell(state, isQV) {
+    var cls = state === 'F' ? 'full' : state === 'p' ? 'part' : 'none';
+    return '<td class="mcell' + (isQV ? ' col-qv' : '') + '"><span class="dot ' + cls +
+           '" title="' + titleMap[state] + '"></span></td>';
+  }
+  var last = platforms.length - 1;
+  var h = '<table class="matrix"><thead><tr><th class="rowlab"></th>';
+  platforms.forEach(function (p, i) {
+    h += '<th class="' + (i === last ? 'qvhead col-qv' : '') + '">' + p + '</th>';
+  });
+  h += '</tr></thead><tbody>';
+  rows.forEach(function (r) {
+    h += '<tr><th class="rowlab" scope="row">' + r[0] + '</th>';
+    for (var i = 1; i < r.length; i++) h += cell(r[i], i - 1 === last);
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  mount.innerHTML = h;
 })();
 </script>
 
