@@ -266,6 +266,31 @@ nav.top-nav a:hover { color: var(--accent); }
 .loop .tag { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 8px; }
 .small-enough { font-family: var(--serif); font-size: 1.15rem; line-height: 1.55; max-width: 46em; margin-top: 44px; }
 
+/* ---------- frontiers ---------- */
+.frontiers-featured { display: grid; grid-template-columns: 1.02fr 1fr; gap: clamp(32px, 5vw, 60px); align-items: center; margin-top: 40px; }
+.frontiers-featured > div { min-width: 0; }
+.frontiers-featured .ff-tag { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 10px; }
+.frontiers-featured h3 { font-size: clamp(1.35rem, 2.4vw, 1.75rem); font-weight: 600; margin-bottom: 14px; }
+.frontiers-featured p { font-size: .95rem; color: var(--muted); margin: 0; max-width: 42ch; }
+.frontier-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 28px; }
+.frontier-card { background: var(--surface); padding: 22px 24px; }
+.frontier-card .fc-tag { font-family: var(--mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 8px; }
+.frontier-card h4 { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+.frontier-card p { font-size: .9rem; color: var(--muted); margin: 0; }
+.frontier-card .fc-loop { font-family: var(--mono); font-size: .66rem; color: var(--muted); margin-top: 12px; display: block; }
+.frontier-card .fc-loop b { color: var(--ink); font-weight: 500; }
+
+/* drift observatory chart */
+.drift { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--card-shadow); padding: 18px 20px 14px; }
+.drift .d-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+.drift .d-title { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.drift .d-sub { font-family: var(--mono); font-size: .66rem; color: var(--muted); }
+.drift svg { display: block; width: 100%; height: auto; }
+.drift .d-readout { font-family: var(--mono); font-size: .7rem; color: var(--muted); margin-top: 8px; min-height: 1.2em; }
+.drift .d-readout b { color: var(--ink); font-weight: 500; }
+@media (max-width: 960px) { .frontiers-featured { grid-template-columns: 1fr; } }
+@media (max-width: 620px) { .frontier-grid { grid-template-columns: 1fr; } }
+
 /* ---------- roadmap ---------- */
 .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 40px; }
 .phase { border-left: 1px solid var(--line); padding: 4px 22px 4px 20px; }
@@ -317,6 +342,7 @@ h2.section-title { font-size: clamp(1.65rem, 3.2vw, 2.3rem); font-weight: 600; }
     <nav class="top-nav" aria-label="Page">
       <a href="#pillars">Pillars</a>
       <a href="#why">Why now</a>
+      <a href="#frontiers">Frontiers</a>
       <a href="#roadmap">Roadmap</a>
       <a href="https://github.com/karelgo/QuantumVerse">GitHub ↗</a>
     </nav>
@@ -533,6 +559,61 @@ H = qv.load(<span class="st">"instances/lih-sto3g"</span>)</div>
   </div>
 </section>
 
+<!-- ============ FRONTIERS ============ -->
+<section id="frontiers">
+  <div class="wrap">
+    <p class="eyebrow">Beyond the horizon</p>
+    <h2 class="section-title">What the artifact layer makes possible.</h2>
+
+    <div class="frontiers-featured">
+      <div>
+        <span class="ff-tag">Frontier 01 · The Drift Observatory</span>
+        <h3>A weather map for quantum hardware.</h3>
+        <p>Every Experiment Capsule already carries a device calibration snapshot. Aggregate them over time and you get the thing no one keeps today: the longitudinal record of how quantum hardware actually behaves — which machines are healthy, which just degraded, which recovered after a recalibration. It's the control group reproducibility needs, and a public dataset in its own right.</p>
+      </div>
+      <div>
+        <div class="drift">
+          <div class="d-head">
+            <span class="d-title">ibm_kingston · 30-day drift</span>
+            <span class="d-sub">simulated preview</span>
+          </div>
+          <div id="drift-svg" role="img" aria-label="Simulated 30-day drift of T1 coherence and two-qubit gate fidelity for one backend, with a recalibration event around day 20 that restores both metrics."></div>
+          <div class="d-readout" id="drift-readout"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frontier-grid">
+      <div class="frontier-card">
+        <span class="fc-tag">Frontier 02</span>
+        <h4>Agent-native by design</h4>
+        <p>An MCP server exposing search, load, verify, and publish — so AI assistants are first-class users, pulling <em>checked</em> baselines instead of hallucinating circuits. Agents compete in Circuit Golf too, with the equivalence checker as referee.</p>
+        <span class="fc-loop">compounds the <b>reuse</b> &amp; <b>education</b> loops</span>
+      </div>
+      <div class="frontier-card">
+        <span class="fc-tag">Frontier 03</span>
+        <h4>Federation</h4>
+        <p>Self-hosted instances — a lab, a company, a national facility — that keep sensitive work private and sync public capsules to the commons like git remotes. Possible only because the formats are open specs. Neutrality becomes architecture, not a promise.</p>
+        <span class="fc-loop">compounds <b>all four</b> loops, structurally</span>
+      </div>
+      <div class="frontier-card">
+        <span class="fc-tag">Frontier 04</span>
+        <h4>The Quantum CV</h4>
+        <p>A profile that is earned, not claimed: capsules authored, provider-verified results, golf rank, review contributions. The first <em>verifiable</em> quantum résumé — cryptographic backing instead of vibes, in a field where hiring is guesswork.</p>
+        <span class="fc-loop">compounds the <b>status</b> loop</span>
+      </div>
+      <div class="frontier-card">
+        <span class="fc-tag">Frontier 05</span>
+        <h4>Capsule-backed publishing</h4>
+        <p>A "reproducible" badge and an overlay-journal path: reviewers replay a capsule in one click instead of squinting at figures. Editors get a policy dial — "hardware results require a provider-verified capsule." Infrastructure for the scholarly record.</p>
+        <span class="fc-loop">compounds the <b>credibility</b> loop, into academia</span>
+      </div>
+    </div>
+
+    <p class="small-enough">None of these are features bolted on. Each falls out of a decision the vision already made — capture the device snapshot, publish the format as a spec, verify instead of trust — and pays it forward into a new domain. Read the full sketch in <a href="https://github.com/karelgo/QuantumVerse#beyond-the-pillars">FRONTIERS.md</a>.</p>
+  </div>
+</section>
+
 <!-- ============ ROADMAP ============ -->
 <section id="roadmap">
   <div class="wrap">
@@ -542,7 +623,7 @@ H = qv.load(<span class="st">"instances/lih-sto3g"</span>)</div>
       <div class="phase active">
         <span class="p-num">Phase 0</span>
         <h3>The Manifesto</h3>
-        <p>This vision, this page, and the founding conversations. Recruit 10–20 respected early voices as founding contributors.</p>
+        <p>This vision, this page, the first spec (RFC-0001), and the founding conversations. Recruit 10–20 respected early voices as founding contributors.</p>
       </div>
       <div class="phase">
         <span class="p-num">Phase 1</span>
@@ -813,6 +894,112 @@ H = qv.load(<span class="st">"instances/lih-sto3g"</span>)</div>
   buildBars();
   renderCircuit();
   update();
+})();
+</script>
+
+<script>
+/* Drift Observatory mini-chart: two single-series sparklines (T1, gate
+   fidelity) sharing a 30-day x-axis — never a dual-axis plot; each row
+   auto-scales to its own range. Deterministic seeded walk, so the curves
+   are stable across renders and theme switches. */
+(function () {
+  'use strict';
+  var host = document.getElementById('drift-svg');
+  if (!host) return;
+
+  var N = 30, EV = 19;                 // 30 days; recalibration on day 20 (index 19)
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  var rnd = mulberry32(20260707);
+  var t1 = [], fid = [], t1v = 312, fv = 0.9912;
+  for (var i = 0; i < N; i++) {
+    if (i === EV) { t1v = 331; fv = 0.9939; }          // recalibration restores both
+    else { t1v += (rnd() - 0.56) * 4.6; fv += (rnd() - 0.56) * 0.00092; }  // slow degradation + noise
+    t1v = Math.max(288, Math.min(340, t1v));
+    fv = Math.max(0.983, Math.min(0.9965, fv));
+    t1.push(t1v); fid.push(fv);
+  }
+
+  // geometry
+  var W = 340, H = 150, X0 = 8, X1 = 332;
+  var rows = [
+    { data: t1,  top: 24, bot: 58,  label: 'T1 coherence',        fmt: function (v) { return v.toFixed(0) + ' µs'; } },
+    { data: fid, top: 96, bot: 130, label: '2-qubit gate fidelity', fmt: function (v) { return v.toFixed(4); } }
+  ];
+  function xAt(i) { return X0 + i / (N - 1) * (X1 - X0); }
+  rows.forEach(function (r) {
+    var mn = Math.min.apply(null, r.data), mx = Math.max.apply(null, r.data), pad = (mx - mn) * 0.18 || 1;
+    r.mn = mn - pad; r.mx = mx + pad;
+    r.yAt = function (v) { return r.bot - (v - r.mn) / (r.mx - r.mn) * (r.bot - r.top); };
+  });
+  var evX = xAt(EV);
+
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" font-family="ui-monospace,Menlo,Consolas,monospace" preserveAspectRatio="none">';
+  // recalibration event marker (spans both rows)
+  s += '<line x1="' + evX.toFixed(1) + '" y1="18" x2="' + evX.toFixed(1) + '" y2="134" stroke="var(--wire)" stroke-width="1" stroke-dasharray="3 3"/>';
+  s += '<text x="' + (evX + 4).toFixed(1) + '" y="15" font-size="8.5" fill="var(--muted)">recalibration</text>';
+
+  rows.forEach(function (r) {
+    // label + baseline
+    s += '<text x="' + X0 + '" y="' + (r.top - 6) + '" font-size="9" fill="var(--muted)">' + r.label + '</text>';
+    s += '<line x1="' + X0 + '" y1="' + r.bot + '" x2="' + X1 + '" y2="' + r.bot + '" stroke="var(--line)" stroke-width="1"/>';
+    // area + line
+    var pts = r.data.map(function (v, i) { return xAt(i).toFixed(1) + ',' + r.yAt(v).toFixed(1); });
+    s += '<path d="M' + X0 + ',' + r.bot + ' L' + pts.join(' L') + ' L' + X1 + ',' + r.bot + ' Z" fill="var(--accent-fill)" fill-opacity="0.10"/>';
+    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--accent-fill)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    // emphasized endpoint
+    var lx = xAt(N - 1), ly = r.yAt(r.data[N - 1]);
+    s += '<circle cx="' + lx.toFixed(1) + '" cy="' + ly.toFixed(1) + '" r="3.5" fill="var(--accent-fill)"/>';
+  });
+
+  // hover crosshair (hidden until pointer moves)
+  s += '<g id="drift-cross" style="opacity:0">';
+  s += '<line id="dc-line" x1="0" y1="18" x2="0" y2="134" stroke="var(--accent)" stroke-width="1"/>';
+  s += '<circle id="dc-a" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/>';
+  s += '<circle id="dc-b" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/>';
+  s += '</g>';
+  s += '<rect id="drift-hit" x="0" y="0" width="' + W + '" height="' + H + '" fill="transparent" style="cursor:crosshair"/>';
+  s += '</svg>';
+  host.innerHTML = s;
+
+  var svg = host.querySelector('svg');
+  var readout = document.getElementById('drift-readout');
+  var cross = document.getElementById('drift-cross');
+  var dcLine = document.getElementById('dc-line');
+  var dcA = document.getElementById('dc-a'), dcB = document.getElementById('dc-b');
+  var hit = document.getElementById('drift-hit');
+
+  function setReadout(i) {
+    readout.innerHTML = 'day ' + (i + 1) + '/30 · T1 <b>' + rows[0].fmt(t1[i]) +
+      '</b> · fidelity <b>' + rows[1].fmt(fid[i]) + '</b>' +
+      (i === EV ? ' · <b>recalibrated</b>' : '');
+  }
+  function showAt(i) {
+    var x = xAt(i);
+    dcLine.setAttribute('x1', x); dcLine.setAttribute('x2', x);
+    dcA.setAttribute('cx', x); dcA.setAttribute('cy', rows[0].yAt(t1[i]));
+    dcB.setAttribute('cx', x); dcB.setAttribute('cy', rows[1].yAt(fid[i]));
+    cross.style.opacity = '1';
+    setReadout(i);
+  }
+  function idxFromEvent(e) {
+    var box = svg.getBoundingClientRect();
+    var px = (e.clientX - box.left) / box.width * W;   // back to viewBox units
+    var i = Math.round((px - X0) / (X1 - X0) * (N - 1));
+    return Math.max(0, Math.min(N - 1, i));
+  }
+  hit.addEventListener('pointermove', function (e) { showAt(idxFromEvent(e)); });
+  hit.addEventListener('pointerleave', function () {
+    cross.style.opacity = '0';
+    setReadout(N - 1);
+  });
+  setReadout(N - 1);   // default: latest day
 })();
 </script>
 

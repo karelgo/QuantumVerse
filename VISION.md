@@ -114,7 +114,7 @@ capsule/
 └── receipt.sig             # optional provider-signed execution receipt
 ```
 
-A Capsule is a *git commit for a quantum experiment*: hash-addressed, citable (DOI-mintable), forkable, and replayable ("re-run this capsule on today's calibration and diff the outcomes"). For the first time, "as reported in our paper" can be a link instead of a promise — and journals, reviewers, and grant agencies become a natural distribution channel, because Capsules solve *their* problem too.
+A Capsule is a *git commit for a quantum experiment*: hash-addressed, citable (DOI-mintable), forkable, and replayable ("re-run this capsule on today's calibration and diff the outcomes"). For the first time, "as reported in our paper" can be a link instead of a promise — and journals, reviewers, and grant agencies become a natural distribution channel, because Capsules solve *their* problem too. The format is specified in [RFC-0001](rfcs/rfc-0001-experiment-capsule.md).
 
 ### Semantic circuit diffs
 
@@ -204,7 +204,7 @@ QuantumVerse only works as a community institution. The founding commitments:
 - **Open core.** The platform, the `quantumverse` client, the artifact and Capsule specifications: Apache-2.0, developed in the open, from day one.
 - **Open spec first.** The Capsule and Circuit Card formats are published as standalone specifications anyone can implement — the formats should outlive any one host, and neutrality is what earns hardware vendors' participation.
 - **Open data.** Public artifacts are bulk-downloadable. No lock-in; leaving must always be easy — that's *why* nobody will want to.
-- **Community governance.** A technical steering group spanning academia, vendors, and independent developers governs the specs; benchmark methodology changes happen by public RFC.
+- **Community governance.** A technical steering group spanning academia, vendors, and independent developers governs the specs; benchmark methodology changes happen by public RFC — the process and the first spec live in [`rfcs/`](rfcs/).
 
 Sustainability, in one paragraph: the open-core path that funded GitHub and Hugging Face — free forever for public artifacts and community use; later, paid private hosting for companies, managed Quantum CI minutes, and enterprise features. Nothing in the community offering is ever the product being withheld.
 
@@ -236,3 +236,7 @@ If this vision resonates:
 - **Everyone:** star, watch, argue. The spec RFCs land in this repository first.
 
 Code found its home. Models found their home. **Quantum is next.**
+
+---
+
+*Beyond the three pillars: [FRONTIERS.md](FRONTIERS.md) sketches the next ring of ideas — the Drift Observatory, agent-native access, federation, the verified Quantum CV, and capsule-backed publishing.*

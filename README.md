@@ -6,7 +6,7 @@ GitHub gave code a home. Hugging Face gave models a home. Quantum computing — 
 
 QuantumVerse is the missing layer: an open, community-owned platform for publishing, discovering, running, and **verifying** quantum work.
 
-📖 **Read the full vision:** [VISION.md](VISION.md) · 🌐 **Pitch site:** [`docs/index.html`](docs/index.html) (live via GitHub Pages)
+📖 **Read the full vision:** [VISION.md](VISION.md) · 🔭 **What's beyond the pillars:** [FRONTIERS.md](FRONTIERS.md) · 📐 **First spec:** [RFC-0001](rfcs/rfc-0001-experiment-capsule.md) · 🌐 **Pitch site:** [`docs/index.html`](docs/index.html) (live via GitHub Pages)
 
 ---
 
@@ -45,6 +45,19 @@ Every circuit page has a **Run** button — a WASM statevector simulator execute
 ## Principles
 
 **Open core** (Apache-2.0, developed in the open) · **open spec first** (Capsule & Card formats published as standalone standards) · **open data** (public artifacts bulk-downloadable, no lock-in) · **community governance** (spec changes by public RFC).
+
+## Beyond the pillars
+
+Once the artifact layer exists, new infrastructure becomes possible: the **Drift Observatory** (a public weather map of hardware calibration), **agent-native access** (an MCP server so AI assistants can search, load, and verify artifacts), **federation** (self-hosted instances syncing to the commons), the **verified Quantum CV**, and **capsule-backed publishing**. See [FRONTIERS.md](FRONTIERS.md).
+
+## Repository map
+
+| Path | What it is |
+|---|---|
+| [`VISION.md`](VISION.md) | The full whitepaper — the three pillars in depth |
+| [`FRONTIERS.md`](FRONTIERS.md) | The next ring of ideas beyond the pillars |
+| [`rfcs/`](rfcs/) | Open specifications, developed by public RFC |
+| [`docs/`](docs/index.html) | The self-contained pitch site (served via GitHub Pages) |
 
 ## Get involved
 
