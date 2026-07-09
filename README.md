@@ -60,6 +60,7 @@ Once the artifact layer exists, new infrastructure becomes possible: the **Drift
 | [`COMPETITIVE-LANDSCAPE.md`](COMPETITIVE-LANDSCAPE.md) | Honest map of adjacent projects and where the whitespace is |
 | [`rfcs/`](rfcs/) | Open specifications, developed by public RFC |
 | [`docs/`](docs/index.html) | The self-contained pitch site (served via GitHub Pages) |
+| [`docs/blog/`](docs/blog/how-a-quantum-job-travels.html) | Explainers — *How a Quantum Job Travels* (user → qubit → user, end to end) |
 
 ## Get involved
 
