@@ -214,6 +214,8 @@ Sustainability, in one paragraph: the open-core path that funded GitHub and Hugg
 
 ## 10. Roadmap
 
+*This is the strategic arc — what ships and why. The engineering execution plan behind it (architecture, build-vs-reuse, per-phase exit gates, first ten steps) lives in [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md).*
+
 **Phase 0 — The Manifesto** *(now)*
 This document, the pitch site, and the founding conversations. Recruit 10–20 respected early voices from the QOSF / unitaryHACK / framework-dev communities as founding contributors.
 

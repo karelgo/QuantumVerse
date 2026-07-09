@@ -56,6 +56,7 @@ Once the artifact layer exists, new infrastructure becomes possible: the **Drift
 |---|---|
 | [`VISION.md`](VISION.md) | The full whitepaper — the three pillars in depth |
 | [`FRONTIERS.md`](FRONTIERS.md) | The next ring of ideas beyond the pillars |
+| [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) | The phased engineering plan — architecture, build-vs-reuse, exit gates |
 | [`COMPETITIVE-LANDSCAPE.md`](COMPETITIVE-LANDSCAPE.md) | Honest map of adjacent projects and where the whitespace is |
 | [`rfcs/`](rfcs/) | Open specifications, developed by public RFC |
 | [`docs/`](docs/index.html) | The self-contained pitch site (served via GitHub Pages) |
