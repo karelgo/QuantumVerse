@@ -6,6 +6,7 @@ a statevector simulator for the shared OpenQASM 3 subset, and the ``qv`` CLI.
 
 from .capsule import Capsule
 from .cards import build_card
+from .capture import capture, device_from_qiskit
 from .hub import load, push
 from .qasm import parse_qasm
 from .resources import count_resources
@@ -17,6 +18,8 @@ __all__ = [
     "load",
     "push",
     "Capsule",
+    "capture",
+    "device_from_qiskit",
     "parse_qasm",
     "count_resources",
     "build_card",

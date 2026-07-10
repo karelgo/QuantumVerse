@@ -25,4 +25,18 @@ import quantumverse as qv
 art = qv.load("demo/bell")                 # LoadedArtifact
 print(art.text())                          # circuit.qasm
 circuit = art.qiskit()                     # optional [qiskit] extra
+
+# Capture an experiment as a capsule while it runs (RFC-0001):
+with qv.capture(title="Bell on qv-sim", authors=["Me"]) as cap:
+    result = cap.run(art.text(), shots=4096, seed=42)
+capsule_id = cap.publish(sign_with="default", signer="qv:users/me")
+
+# On hardware: snapshot the device, record your existing run
+with qv.capture(title="Bell on real iron", authors=["Me"],
+                device=qv.device_from_qiskit(backend)) as cap:
+    job = backend.run(transpiled, shots=4096)          # your code, unchanged
+    cap.record(circuit_qasm=abstract_qasm, compiled_qasm=transpiled_qasm,
+               counts=job.result().get_counts(), shots=4096,
+               job_ids=[job.job_id()])
+capsule = cap.capsule(sign_with="default")
 ```
