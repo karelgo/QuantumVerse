@@ -512,6 +512,39 @@ class Capsule:
                 lines.append(f"    {name:<18} {len(self.files[name]):>7} B  {short}")
         return "\n".join(lines)
 
+    def bibtex(self) -> str:
+        """BibTeX citation per RFC-0001 §Citation."""
+        manifest = self.manifest
+        cid = manifest.get("id", "")
+        short = self.short_id
+        authors = " and ".join(
+            a.get("name", "?") for a in manifest.get("authors", []) if isinstance(a, dict)
+        )
+        year = str(manifest.get("created", ""))[:4] or "????"
+        from .signing import trust_level
+
+        level, _ = trust_level(self.files, cid)
+        note = {
+            0: "execution record",
+            1: "author-signed execution record",
+            2: "provider-verified execution record",
+        }[level]
+        lines = [
+            f"@misc{{qv_{short},",
+            f"  title        = {{{manifest.get('title', '?')}}},",
+            f"  author       = {{{authors}}},",
+            f"  year         = {{{year}}},",
+        ]
+        doi = manifest.get("doi")
+        if doi:
+            lines.append(f"  doi          = {{{doi}}},")
+        lines += [
+            f"  howpublished = {{QuantumVerse capsule/{short}}},",
+            f"  note         = {{{note}; id {cid}}},",
+            "}",
+        ]
+        return "\n".join(lines)
+
     def _try_json(self, name: str) -> Optional[dict]:
         raw = self.files.get(name)
         if raw is None:

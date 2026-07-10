@@ -18,11 +18,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "mcp"]
 qiskit = ["qiskit"]
+mcp = ["mcp"]
 
 [project.scripts]
 qv = "quantumverse.cli:main"
+qv-mcp = "quantumverse.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

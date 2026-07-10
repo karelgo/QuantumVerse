@@ -96,6 +96,11 @@ def _cmd_capsule_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_capsule_cite(args: argparse.Namespace) -> int:
+    print(Capsule.load(args.path).bibtex())
+    return 0
+
+
 def _cmd_capsule_sign(args: argparse.Namespace) -> int:
     capsule = Capsule.load(args.path)
     errors = [f for f in capsule.validate() if f.severity == "error"]
@@ -597,6 +602,10 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ci = capsule_sub.add_parser("inspect", help="human-readable capsule summary")
     p_ci.add_argument("path", metavar="PATH", help="capsule directory or tar")
     p_ci.set_defaults(func=_cmd_capsule_inspect)
+
+    p_cite = capsule_sub.add_parser("cite", help="BibTeX citation (RFC-0001 §Citation)")
+    p_cite.add_argument("path", metavar="PATH", help="capsule directory or tar")
+    p_cite.set_defaults(func=_cmd_capsule_cite)
 
     p_cs = capsule_sub.add_parser(
         "sign", help="attach an author signature (trust level 1) to a valid capsule"

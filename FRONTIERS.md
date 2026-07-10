@@ -18,6 +18,8 @@
 
 ## 2. Agent-native by design
 
+*Now implemented: `pip install "quantumverse[mcp]" && qv-mcp` — search, load, run, diff, verify, replay, device cards, and leaderboards as MCP tools over any registry.*
+
 **What it is.** A [Model Context Protocol](https://modelcontextprotocol.io) server exposing the platform's verbs — *search, load, verify, publish, replay* — so that AI assistants are first-class users, not screen-scrapers. "Find me a provider-verified VQE baseline for LiH, load it into PennyLane, and tell me what backend it was validated on" becomes one call.
 
 **Why it's novel.** Every existing quantum platform was designed for humans clicking, in an era that is ending. QuantumVerse would be the first research platform built from day one for the reality that most quantum code is now written with an AI in the loop — an assistant that can reach into a verified artifact library and pull a *checked* baseline is categorically more useful than one hallucinating a circuit from memory. And it cuts the other way: AI agents can **compete in [Circuit Golf](VISION.md#pillar-iii--the-playground)**, with human-vs-agent leagues and an equivalence checker as impartial referee — a public, verifiable benchmark of machine circuit-optimization that doesn't exist anywhere today.

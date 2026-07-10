@@ -29,6 +29,8 @@ qv device drift quantumverse/qv-sim                    # calibration timeline, f
 qv device certify quantumverse/qv-sim --seed 7         # birth certificate (RFC-0005)
 qv board show maxcut-triangle                          # verified leaderboard (RFC-0006)
 qv board submit maxcut-triangle <capsule-id>           # the registry recomputes your score
+qv capsule cite cap.tar                                # BibTeX, straight from the manifest
+qv-mcp                                                 # MCP server: agents search/load/run/verify
 ```
 
 ---
