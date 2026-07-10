@@ -16,6 +16,13 @@ from .capsule import Capsule, CapsuleError
 from .cards import CardError, build_card
 from .hub import ARTIFACT_TYPES, load, push
 from .qasm import QasmError, parse_qasm
+from .certify import (
+    CertifyError,
+    SUITE,
+    ideal_distribution,
+    suite_circuits,
+    threshold,
+)
 from .devices import RECORD_VERSION, DeviceRecordError
 from .registry import RegistryError, get_registry
 from .signing import SigningError, generate_keypair, key_info, sign_files, trust_level
@@ -304,6 +311,15 @@ def _format_device_card(card: dict) -> str:
         summary = latest.get("summary", {})
         stats = " · ".join(f"{k}={v}" for k, v in sorted(summary.items()))
         lines.append(f"  latest:    {latest.get('captured', '?')}  {stats}")
+    certificate = card.get("certificate")
+    if certificate:
+        verdict = "PASSED" if certificate.get("passed") else "FAILED"
+        lines.append(
+            f"  birth certificate: {verdict} — {certificate.get('suite')} at width "
+            f"{certificate.get('width')} (issued {certificate.get('issued')})"
+        )
+    else:
+        lines.append("  birth certificate: none — run 'qv device certify'")
     return "\n".join(lines)
 
 
@@ -325,6 +341,80 @@ def _cmd_device_list(args: argparse.Namespace) -> int:
             f"{card.get('calibration_count', 0)} calibration(s) — {record.get('summary', '')}"
         )
     return 0
+
+
+def _format_certificate(certificate: dict) -> str:
+    lines = [
+        f"birth certificate — {certificate['suite']} at width {certificate['width']}"
+        f" (issued {certificate['issued']})"
+    ]
+    for check in certificate["checks"]:
+        verdict = "PASS" if check["pass"] else "FAIL"
+        lines.append(
+            f"  {verdict}  {check['name']:<14} {check['qubits']}q  "
+            f"tv={check['tv_distance']:.4f} (max {check['threshold']})  "
+            f"capsule/{check['capsule'].split(':', 1)[1][:6]}"
+        )
+    lines.append(f"  overall: {'PASSED' if certificate['passed'] else 'FAILED'}")
+    return "\n".join(lines)
+
+
+def _cmd_device_certify(args: argparse.Namespace) -> int:
+    owner, name = _device_ref(args.ref)
+
+    if args.emit_suite:
+        out_dir = Path(args.emit_suite)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ideals = {}
+        for check_name, qasm_text in suite_circuits(args.qubits).items():
+            (out_dir / f"{check_name}.qasm").write_text(qasm_text, encoding="utf-8")
+            width = 2 if check_name == "bell" else args.qubits
+            ideals[check_name] = {
+                "ideal": ideal_distribution(check_name, width),
+                "max_tv": threshold(check_name),
+            }
+        (out_dir / "ideals.json").write_text(
+            json.dumps({"suite": SUITE, "width": args.qubits, "checks": ideals}, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
+        print(f"wrote {SUITE} at width {args.qubits} to {out_dir}/")
+        print("run each circuit on the machine, capture each run as a capsule, push")
+        print("them, then: qv device certify <ref> --from-capsules <id> <id> <id> <id>")
+        return 0
+
+    registry = get_registry(args.registry)
+
+    if args.from_capsules:
+        certificate = registry.submit_certificate(owner, name, args.from_capsules)
+        print(_format_certificate(certificate))
+        return 0 if certificate["passed"] else 1
+
+    # --run-local: the reference path, only honest for the built-in simulator
+    card = registry.get_device(owner, name)
+    backend = card["record"]["backend"]
+    if (backend["provider"], backend["name"]) != ("quantumverse", "qv-sim"):
+        raise CertifyError(
+            f"--run-local executes on the built-in simulator, but {card['ref']} is "
+            f"{backend['provider']}/{backend['name']} — use --emit-suite to run the "
+            "suite on the machine itself, then --from-capsules"
+        )
+    from .capture import capture
+
+    capsule_ids = []
+    for check_name, qasm_text in suite_circuits(args.qubits).items():
+        with capture(
+            title=f"{SUITE}: {check_name} (width {args.qubits})",
+            authors=[args.author or "qv device certify"],
+        ) as cap:
+            cap.run(qasm_text, shots=args.shots, seed=args.seed)
+        capsule_ids.append(
+            cap.publish(registry=registry, sign_with=args.key, signer=args.signer)
+        )
+        print(f"  ran {check_name}: capsule/{capsule_ids[-1].split(':', 1)[1][:6]}")
+    certificate = registry.submit_certificate(owner, name, capsule_ids)
+    print(_format_certificate(certificate))
+    return 0 if certificate["passed"] else 1
 
 
 def _cmd_device_drift(args: argparse.Namespace) -> int:
@@ -547,6 +637,23 @@ def _build_parser() -> argparse.ArgumentParser:
     p_dd.add_argument("--registry", metavar="URL")
     p_dd.set_defaults(func=_cmd_device_drift)
 
+    p_dc = device_sub.add_parser(
+        "certify", help="run or submit the commissioning suite (RFC-0005 birth certificate)"
+    )
+    p_dc.add_argument("ref", metavar="REF")
+    p_dc.add_argument("--qubits", type=int, default=3, help="suite width (default 3)")
+    p_dc.add_argument("--emit-suite", metavar="DIR",
+                      help="write the suite circuits + ideal distributions to DIR and exit")
+    p_dc.add_argument("--from-capsules", nargs="+", metavar="CAPSULE_ID",
+                      help="recompute + submit a certificate from already-pushed capsules")
+    p_dc.add_argument("--shots", type=int, default=4096, help="--run-local shots (default 4096)")
+    p_dc.add_argument("--seed", type=int, help="--run-local sampling seed")
+    p_dc.add_argument("--author", help="--run-local capsule author")
+    p_dc.add_argument("--key", help="--run-local: sign each capsule with this key")
+    p_dc.add_argument("--signer", metavar="QV_URI", help="--run-local: signer claim")
+    p_dc.add_argument("--registry", metavar="URL")
+    p_dc.set_defaults(func=_cmd_device_certify)
+
     # qv push / pull / search
     p_push = sub.add_parser("push", help="publish an artifact version to a registry")
     p_push.add_argument("path", metavar="PATH", help="payload file or directory")
@@ -593,6 +700,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         VerifyError,
         DeviceRecordError,
         SigningError,
+        CertifyError,
         FileNotFoundError,
         ValueError,
         KeyError,

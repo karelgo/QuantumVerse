@@ -343,6 +343,56 @@ def test_capsule_feeds_device_timeline(client):
     ).json()["calibration_count"] == 1
 
 
+def test_birth_certificate_recomputed_server_side(client):
+    import quantumverse as qv
+    from quantumverse.certify import suite_circuits
+
+    client.post("/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD})
+
+    capsule_ids = []
+    for name, qasm_text in suite_circuits(3).items():
+        with qv.capture(title=f"check {name}", authors=["API test"]) as cap:
+            cap.run(qasm_text, shots=4096, seed=13)
+        capsule = cap.capsule()
+        assert client.post(
+            "/api/v1/capsules", json=_capsule_payload(capsule)
+        ).status_code == 201
+        capsule_ids.append(capsule.id)
+
+    # unknown capsule id -> rejected (push first; the server only trusts its own store)
+    bogus = ["sha256:" + "0" * 64]
+    assert client.post(
+        "/api/v1/devices/quantumverse/qv-sim/certificate", json={"capsules": bogus}
+    ).status_code == 404
+
+    # incomplete suite -> 422
+    assert client.post(
+        "/api/v1/devices/quantumverse/qv-sim/certificate",
+        json={"capsules": capsule_ids[:2]},
+    ).status_code == 422
+
+    response = client.post(
+        "/api/v1/devices/quantumverse/qv-sim/certificate", json={"capsules": capsule_ids}
+    )
+    assert response.status_code == 201
+    certificate = response.json()
+    assert certificate["passed"] is True
+    assert len(certificate["checks"]) == 4
+    assert all(c["capsule"] in capsule_ids for c in certificate["checks"])
+
+    # pinned to the Device Card and retrievable on its own
+    card = client.get("/api/v1/devices/quantumverse/qv-sim").json()
+    assert card["certificate"]["passed"] is True
+    assert client.get(
+        "/api/v1/devices/quantumverse/qv-sim/certificate"
+    ).json() == certificate
+
+    # a device with no certificate 404s
+    other = {**DEVICE_RECORD, "backend": {"provider": "lab", "name": "bare"}}
+    client.post("/api/v1/devices/lab/bare", json={"record": other})
+    assert client.get("/api/v1/devices/lab/bare/certificate").status_code == 404
+
+
 def test_direct_calibration_submission(client):
     client.post("/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD})
     snapshot = {

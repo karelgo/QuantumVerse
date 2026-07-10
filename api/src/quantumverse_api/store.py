@@ -58,6 +58,13 @@ CREATE TABLE IF NOT EXISTS calibrations (
     capsule   TEXT,              -- capsule id, or NULL for direct submissions
     summary   TEXT NOT NULL      -- JSON summary derived at ingest
 );
+CREATE TABLE IF NOT EXISTS certificates (
+    id        INTEGER PRIMARY KEY,
+    device_id INTEGER NOT NULL REFERENCES devices(id),
+    issued    TEXT NOT NULL,
+    passed    INTEGER NOT NULL,
+    doc       TEXT NOT NULL      -- JSON certificate, recomputed server-side (RFC-0005)
+);
 """
 
 
@@ -393,6 +400,10 @@ class Store:
                 "SELECT COUNT(*) AS n, COUNT(capsule) AS c FROM calibrations WHERE device_id=?",
                 (row["id"],),
             ).fetchone()
+            cert_row = conn.execute(
+                "SELECT doc FROM certificates WHERE device_id=? ORDER BY issued DESC, id DESC LIMIT 1",
+                (row["id"],),
+            ).fetchone()
         card = {
             "ref": f"qv:device/{namespace}/{name}",
             "namespace": namespace,
@@ -406,6 +417,7 @@ class Store:
                 if latest
                 else None
             ),
+            "certificate": json.loads(cert_row["doc"]) if cert_row else None,
         }
         return card
 
@@ -452,6 +464,55 @@ class Store:
             }
             for r in rows
         ]
+
+    def submit_certificate(
+        self, namespace: str, name: str, capsule_ids: list[str]
+    ) -> dict:
+        """RFC-0005: recompute a certificate from capsules in this store.
+
+        The submitted capsule ids are the only client input; check identity,
+        scores, and the verdict are all derived here.
+        """
+        from quantumverse.certify import evaluate_capsule_files
+
+        with self._connect() as conn:
+            record = json.loads(self._device_row(conn, namespace, name)["record"])
+
+        capsules = []
+        for ref in capsule_ids:
+            hexid = ref.split(":", 1)[1] if ref.startswith("sha256:") else ref
+            capsule_record = self.get_capsule(hexid)
+            files = {
+                path: self.get_blob(digest)
+                for path, digest in capsule_record["files"].items()
+            }
+            capsules.append((capsule_record["id"], files))
+        certificate = evaluate_capsule_files(
+            capsules, expected_backend=record["backend"]
+        )
+        with self._lock, self._connect() as conn:
+            row = self._device_row(conn, namespace, name)
+            conn.execute(
+                "INSERT INTO certificates (device_id, issued, passed, doc) VALUES (?, ?, ?, ?)",
+                (
+                    row["id"],
+                    certificate["issued"],
+                    1 if certificate["passed"] else 0,
+                    json.dumps(certificate, sort_keys=True),
+                ),
+            )
+        return certificate
+
+    def get_certificate(self, namespace: str, name: str) -> dict:
+        with self._connect() as conn:
+            row = self._device_row(conn, namespace, name)
+            cert_row = conn.execute(
+                "SELECT doc FROM certificates WHERE device_id=? ORDER BY issued DESC, id DESC LIMIT 1",
+                (row["id"],),
+            ).fetchone()
+        if cert_row is None:
+            raise NotFound(f"device {namespace}/{name} has no birth certificate")
+        return json.loads(cert_row["doc"])
 
     def device_capsules(self, namespace: str, name: str) -> list[dict]:
         with self._connect() as conn:

@@ -52,6 +52,8 @@ That long tail is to quantum hardware what self-hosted git servers were to code 
 
 ## 3. The Birth Certificate
 
+*Now specified in [RFC-0005](rfcs/rfc-0005-birth-certificate.md) and implemented end to end: `qv device certify` — emit the suite, run it as capsules, and the registry recomputes the certificate itself.*
+
 **What it is.** A standardized, capsule-backed **commissioning suite**: randomized benchmarking, gate and readout fidelities, a fixed slice of the community benchmark sets (MQT Bench / QASMBench / SupermarQ), executed the day a machine comes online. The output is the machine's first entry in the Device Registry — a signed, content-addressed, publicly comparable record of what this machine could actually do on day one. Every subsequent recalibration appends to the same lineage; the birth certificate is the fixed point drift is measured against.
 
 **Why it's novel.** QPU procurement is becoming real — governments, HPC centers, and enterprises are buying on-prem systems (IonQ's Forte Enterprise exists precisely because of this market), and a foundry ships processors to dozens of customers a year. Every one of those transactions currently closes on **vendor spec sheets and acceptance tests nobody outside the room can verify**. A capsule-backed commissioning suite is the vendor-neutral nutrition label: buyers write it into procurement contracts ("acceptance = birth certificate ≥ spec"), vendors ship it as the last step of installation, and a foundry like QuantWare can offer it with every QPU — *"verified on QuantumVerse"* as the industry's handover standard. No vendor can own this standard, because a standard owned by a vendor isn't one. A neutral commons can.

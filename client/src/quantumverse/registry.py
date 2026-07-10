@@ -295,6 +295,7 @@ class LocalRegistry:
         entry = self._device_entry(index, namespace, name)
         calibrations = sorted(entry["calibrations"], key=lambda c: c.get("captured", ""))
         latest = calibrations[-1] if calibrations else None
+        certificates = entry.get("certificates") or []
         return {
             "ref": f"qv:device/{namespace}/{name}",
             "namespace": namespace,
@@ -307,6 +308,7 @@ class LocalRegistry:
                 if latest
                 else None
             ),
+            "certificate": certificates[-1] if certificates else None,
         }
 
     def list_devices(self) -> list[dict]:
@@ -322,6 +324,37 @@ class LocalRegistry:
             entry["calibrations"], key=lambda c: c.get("captured", ""), reverse=True
         )
         return ordered[:limit]
+
+    def submit_certificate(
+        self, namespace: str, name: str, capsule_ids: list[str]
+    ) -> dict:
+        """Recompute and store a birth certificate from capsules (RFC-0005)."""
+        from .certify import evaluate_capsule_files
+
+        index = self._load_index()
+        entry = self._device_entry(index, namespace, name)
+        capsules = []
+        for ref in capsule_ids:
+            hexid = ref.split(":", 1)[1] if ref.startswith("sha256:") else ref
+            record = self.get_capsule(hexid)
+            files = {
+                path: self.get_blob(digest) for path, digest in record["files"].items()
+            }
+            capsules.append((record["id"], files))
+        certificate = evaluate_capsule_files(
+            capsules, expected_backend=entry["record"]["backend"]
+        )
+        entry.setdefault("certificates", []).append(certificate)
+        self._save_index(index)
+        return certificate
+
+    def get_certificate(self, namespace: str, name: str) -> dict:
+        index = self._load_index()
+        entry = self._device_entry(index, namespace, name)
+        certificates = entry.get("certificates") or []
+        if not certificates:
+            raise RegistryError(f"device {namespace}/{name} has no birth certificate")
+        return certificates[-1]
 
 
 class RemoteRegistry:
@@ -443,6 +476,20 @@ class RemoteRegistry:
             f"/api/v1/devices/{namespace}/{name}/calibrations",
             params={"limit": limit},
         ).json()["calibrations"]
+
+    def submit_certificate(
+        self, namespace: str, name: str, capsule_ids: list[str]
+    ) -> dict:
+        return self._request(
+            "POST",
+            f"/api/v1/devices/{namespace}/{name}/certificate",
+            json={"capsules": list(capsule_ids)},
+        ).json()
+
+    def get_certificate(self, namespace: str, name: str) -> dict:
+        return self._request(
+            "GET", f"/api/v1/devices/{namespace}/{name}/certificate"
+        ).json()
 
 
 Registry = Union[LocalRegistry, RemoteRegistry]

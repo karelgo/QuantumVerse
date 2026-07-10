@@ -26,6 +26,7 @@ qv capsule create --circuit … && qv capsule replay …   # RFC-0001 capsules, 
 qv key generate && qv capsule sign cap.tar             # author signature — trust level 1
 qv device show qv:device/quantumverse/qv-sim           # Device Cards (RFC-0004)
 qv device drift quantumverse/qv-sim                    # calibration timeline, fed by capsules
+qv device certify quantumverse/qv-sim --seed 7         # birth certificate (RFC-0005)
 ```
 
 ---
@@ -83,7 +84,7 @@ And the machines themselves become citizens, not just backends: a **Device Regis
 | [`FRONTEND-PLAN.md`](FRONTEND-PLAN.md) | The web frontend — design system, page inventory, quality bar |
 | [`web/`](web/README.md) | The frontend itself — Next.js app: artifact pages, in-browser simulator, capsule verification |
 | [`COMPETITIVE-LANDSCAPE.md`](COMPETITIVE-LANDSCAPE.md) | Honest map of adjacent projects and where the whitespace is |
-| [`rfcs/`](rfcs/) | Open specifications, developed by public RFC (0001 Capsule · 0002 Card · 0003 addressing · 0004 devices) |
+| [`rfcs/`](rfcs/) | Open specifications, developed by public RFC (0001 Capsule · 0002 Card · 0003 addressing · 0004 devices · 0005 certificates) |
 | [`spec/`](spec/) | Machine-readable JSON Schemas backing the RFCs |
 | [`client/`](client/) | `quantumverse` Python package + `qv` CLI — capsules, cards, simulator, diff, CI, push/pull |
 | [`api/`](api/) | `qv-registry` — the reference registry server (FastAPI, SQLite, content-addressed blobs) |

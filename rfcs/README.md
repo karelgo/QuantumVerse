@@ -31,3 +31,4 @@ Anything another implementation would have to interoperate with: artifact format
 | [0002](rfc-0002-circuit-card.md) | Circuit Card format | Draft |
 | [0003](rfc-0003-artifact-addressing.md) | Artifact addressing and `qv:` URIs | Draft |
 | [0004](rfc-0004-device-records.md) | Device records and the Device Registry | Draft |
+| [0005](rfc-0005-birth-certificate.md) | The birth certificate (commissioning suite) | Draft |

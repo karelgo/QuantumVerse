@@ -68,6 +68,10 @@ class DeviceRegistration(BaseModel):
     record: dict
 
 
+class CertificateSubmission(BaseModel):
+    capsules: list[str] = Field(min_length=1)
+
+
 def _check_ref(namespace: str, name: str) -> None:
     try:
         uri = parse_uri(f"{namespace}/{name}")
@@ -305,6 +309,24 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
     def device_capsules(owner: str, name: str) -> dict:
         try:
             return {"capsules": store.device_capsules(owner, name)}
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/v1/devices/{owner}/{name}/certificate", status_code=201)
+    def submit_certificate(owner: str, name: str, body: CertificateSubmission) -> dict:
+        from quantumverse.certify import CertifyError
+
+        try:
+            return store.submit_certificate(owner, name, body.capsules)
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except (CertifyError, Conflict) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.get("/api/v1/devices/{owner}/{name}/certificate")
+    def get_certificate(owner: str, name: str) -> dict:
+        try:
+            return store.get_certificate(owner, name)
         except NotFound as exc:
             raise HTTPException(404, str(exc)) from exc
 
