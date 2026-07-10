@@ -101,6 +101,6 @@ And the machines themselves become citizens, not just backends: a **Device Regis
 
 ## Get involved
 
-Publish one artifact. Argue with the spec. Star, watch, fork. The RFCs land in this repository first.
+Publish one artifact. Argue with the spec. Star, watch, fork. The RFCs land in this repository first — see [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup and ground rules, and [LICENSE](LICENSE) (Apache-2.0) for the terms.
 
 Code found its home. Models found their home. **Quantum is next.**
