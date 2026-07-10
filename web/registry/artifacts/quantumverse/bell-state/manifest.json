@@ -1,0 +1,9 @@
+{
+  "kind": "circuit",
+  "version": "1.0.0",
+  "description": "The two-qubit Bell pair — maximally entangled |Φ+⟩ from one Hadamard and one CNOT. The hello-world of entanglement, and the reference circuit for readout-error sanity checks.",
+  "license": "Apache-2.0",
+  "tags": ["entanglement", "bell", "tutorial"],
+  "created": "2026-06-18T09:00:00Z",
+  "flagship": true
+}

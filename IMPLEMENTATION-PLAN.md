@@ -18,7 +18,7 @@ The roadmap in VISION.md says *what* ships in each phase and *why*. This documen
 
 ```
                          ┌───────────────────────────────────────────┐
-                         │                Web frontend                │
+                         │     Web frontend → FRONTEND-PLAN.md        │
                          │   Next.js/React · design system (from the  │
                          │   pitch site) · artifact pages · Circuit   │
                          │   Cards · search · profiles · leaderboards │

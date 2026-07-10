@@ -1,0 +1,8 @@
+{
+  "kind": "circuit",
+  "version": "2.0.0",
+  "description": "Grover search over three qubits — two iterations, oracle marking |101⟩. Amplifies the marked state to ≈94%: press Run and watch the histogram spike.",
+  "license": "Apache-2.0",
+  "tags": ["grover", "search", "amplitude-amplification"],
+  "created": "2026-07-06T10:15:00Z"
+}

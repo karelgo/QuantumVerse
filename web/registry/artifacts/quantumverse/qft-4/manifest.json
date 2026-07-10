@@ -1,0 +1,9 @@
+{
+  "kind": "circuit",
+  "version": "1.0.2",
+  "description": "Textbook quantum Fourier transform on four qubits: Hadamards, controlled phases at π/2ᵏ, and the closing swap layer. The primitive underneath phase estimation and Shor.",
+  "license": "Apache-2.0",
+  "tags": ["qft", "fourier", "textbook"],
+  "created": "2026-07-01T16:45:00Z",
+  "flagship": true
+}

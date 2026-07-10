@@ -1,0 +1,25 @@
+{
+  "capsule_version": "0.1",
+  "id": "sha256:7b49ce1491344c5144488dd69e36cf1218ed56fca3fbf920d89fbf8db387b6e5",
+  "created": "2026-07-05T18:04:41Z",
+  "title": "8-qubit GHZ ladder on qiskit-aer, readout-corrected",
+  "authors": [
+    {
+      "name": "QuantumVerse Maintainers",
+      "profile": "qv:users/quantumverse"
+    }
+  ],
+  "license": "CC-BY-4.0",
+  "artifacts": {
+    "circuit": "qv:quantumverse/ghz-8@1.1.0"
+  },
+  "files": {
+    "circuit.qasm": "sha256:bd61e45100add745c621fd22e5851c7384c5ca3aa696358e3abfa6d47a2626c1",
+    "environment.lock": "sha256:150ad5132febb2121a50656d2e2fdc3969e1ebc5db7e0466c8bd42e5737c6009",
+    "device.json": "sha256:f1a479b778a0446438bf25f9f4636eb2f331b6efbdf16907978d5f2663bd525e",
+    "execution.json": "sha256:a3d6be9a6b45344be4dca935689904cd4de194c970f699173d6942020859071f",
+    "mitigation.json": "sha256:f3967fc01cb6e831bfffe2177e1acf515f7d2b85f21a6b90066327cfe83ae16b"
+  },
+  "replay_of": null,
+  "doi": null
+}

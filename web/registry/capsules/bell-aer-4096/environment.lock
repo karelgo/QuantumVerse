@@ -1,0 +1,4 @@
+python==3.12.4
+qiskit==1.4.2
+qiskit-aer==0.15.1
+quantumverse==0.0.1

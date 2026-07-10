@@ -1,0 +1,12 @@
+{
+  "backend": { "provider": "local", "name": "qiskit-aer", "version": "0.15.1" },
+  "captured": "2026-07-02T14:31:00Z",
+  "topology": { "num_qubits": 2 },
+  "qubits": [],
+  "gates": [],
+  "simulator": {
+    "engine": "qiskit-aer",
+    "method": "statevector",
+    "noise_model": { "readout_error": 0.01 }
+  }
+}

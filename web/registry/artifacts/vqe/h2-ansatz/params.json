@@ -1,0 +1,9 @@
+{
+  "names": ["θ0", "θ1", "θ2", "θ3"],
+  "values": [0.11024, -0.0513, 1.6231, -1.5708],
+  "observable": "H₂ Hamiltonian · STO-3G · 0.735 Å",
+  "energy": -1.13727,
+  "units": "Ha",
+  "optimizer": "COBYLA",
+  "iterations": 96
+}

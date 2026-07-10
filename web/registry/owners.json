@@ -1,0 +1,13 @@
+{
+  "quantumverse": {
+    "display": "QuantumVerse",
+    "kind": "org",
+    "bio": "Curated flagship artifacts maintained by the QuantumVerse project — the hand-picked seed set every import pipeline is measured against.",
+    "signing_key": "MCowBQYDK2VwAyEAa97YA30/pNSDxbVSVgEBqm1WhKecfDcHMcTMooUiz8s="
+  },
+  "vqe": {
+    "display": "Variational Algorithms WG",
+    "kind": "org",
+    "bio": "Trained ansätze and reference Hamiltonians for variational algorithms — the \"pretrained weights\" of quantum, published so nobody re-burns QPU hours re-optimizing them."
+  }
+}

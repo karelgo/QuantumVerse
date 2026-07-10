@@ -60,6 +60,8 @@ And the machines themselves become citizens, not just backends: a **Device Regis
 | [`FRONTIERS.md`](FRONTIERS.md) | The next ring of ideas beyond the pillars |
 | [`HARDWARE.md`](HARDWARE.md) | The hardware layer — where QPU makers and machine owners plug in |
 | [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) | The phased engineering plan — architecture, build-vs-reuse, exit gates |
+| [`FRONTEND-PLAN.md`](FRONTEND-PLAN.md) | The web frontend — design system, page inventory, quality bar |
+| [`web/`](web/README.md) | The frontend itself — Next.js app: artifact pages, in-browser simulator, capsule verification |
 | [`COMPETITIVE-LANDSCAPE.md`](COMPETITIVE-LANDSCAPE.md) | Honest map of adjacent projects and where the whitespace is |
 | [`rfcs/`](rfcs/) | Open specifications, developed by public RFC |
 | [`docs/`](docs/index.html) | The self-contained pitch site (served via GitHub Pages) |

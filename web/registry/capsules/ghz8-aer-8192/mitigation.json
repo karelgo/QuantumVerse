@@ -1,0 +1,9 @@
+{
+  "pipeline": [
+    {
+      "step": "readout_correction",
+      "method": "matrix_inversion",
+      "calibration_shots": 8192
+    }
+  ]
+}

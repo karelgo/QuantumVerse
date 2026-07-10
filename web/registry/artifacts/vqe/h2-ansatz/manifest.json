@@ -1,0 +1,9 @@
+{
+  "kind": "parameters",
+  "version": "1.4.0",
+  "description": "Hardware-efficient two-qubit ansatz for H₂ (STO-3G, 0.735 Å) with converged variational parameters — load the circuit with its angles bound and skip the optimization loop entirely.",
+  "license": "CC-BY-4.0",
+  "tags": ["vqe", "chemistry", "ansatz", "trained-parameters"],
+  "created": "2026-05-29T08:20:00Z",
+  "flagship": true
+}
