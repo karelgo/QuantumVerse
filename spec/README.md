@@ -12,6 +12,7 @@ Machine-readable companions to the [RFCs](../rfcs/). The RFCs are the normative 
 | [`schemas/device-record.schema.json`](schemas/device-record.schema.json) | Device Registry records | [RFC-0004](../rfcs/rfc-0004-device-records.md) |
 | [`schemas/signature.schema.json`](schemas/signature.schema.json) | `author.sig` / `receipt.sig` signature files | [RFC-0001](../rfcs/rfc-0001-experiment-capsule.md) |
 | [`schemas/certificate.schema.json`](schemas/certificate.schema.json) | Birth certificates (commissioning records) | [RFC-0005](../rfcs/rfc-0005-birth-certificate.md) |
+| [`schemas/leaderboard.schema.json`](schemas/leaderboard.schema.json) | Leaderboard definitions | [RFC-0006](../rfcs/rfc-0006-verified-leaderboards.md) |
 
 Addressing (`qv:` URIs) is defined in [RFC-0003](../rfcs/rfc-0003-artifact-addressing.md); its grammar is enforced in code (see `client/src/quantumverse/uris.py`) rather than by JSON Schema.
 

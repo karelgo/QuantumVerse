@@ -24,6 +24,7 @@ from .certify import (
     threshold,
 )
 from .devices import RECORD_VERSION, DeviceRecordError
+from .leaderboard import LeaderboardError
 from .registry import RegistryError, get_registry
 from .signing import SigningError, generate_keypair, key_info, sign_files, trust_level
 from .simulator import SimulatorError, run
@@ -434,6 +435,73 @@ def _cmd_device_drift(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# leaderboard commands (RFC-0006)
+# ---------------------------------------------------------------------------
+
+_TRUST_BADGES = {0: "·", 1: "✓author", 2: "✓✓provider"}
+
+
+def _cmd_board_create(args: argparse.Namespace) -> int:
+    board = {
+        "board_version": "0.1",
+        "name": args.name,
+        "title": args.title,
+        "instance": args.instance,
+        "metric": args.metric,
+        "higher_is_better": not args.lower_is_better,
+    }
+    if args.min_shots:
+        board["min_shots"] = args.min_shots
+    created = get_registry(args.registry).create_board(board)
+    print(f"created leaderboard {created['name']!r} — {created['title']}")
+    return 0
+
+
+def _cmd_board_list(args: argparse.Namespace) -> int:
+    boards = get_registry(args.registry).list_boards()
+    if not boards:
+        print("no leaderboards")
+        return 0
+    for board in boards:
+        print(
+            f"{board['name']}  [{board['metric']} on {board['instance']}]  "
+            f"{board.get('entry_count', 0)} entries — {board['title']}"
+        )
+    return 0
+
+
+def _cmd_board_show(args: argparse.Namespace) -> int:
+    board = get_registry(args.registry).get_board(args.name)
+    direction = "higher is better" if board["higher_is_better"] else "lower is better"
+    print(f"{board['title']}")
+    print(f"  metric {board['metric']} on {board['instance']}  ({direction})")
+    entries = board.get("entries", [])
+    if not entries:
+        print("  no entries yet — submit one: qv board submit "
+              f"{board['name']} <capsule-id>")
+        return 0
+    for entry in entries:
+        badge = _TRUST_BADGES.get(entry.get("trust", 0), "?")
+        print(
+            f"  #{entry['rank']:<3} {entry['score']:.6f}  {entry['backend']:<24} "
+            f"{(entry.get('shots') or 0):>6} shots  [{badge}]  "
+            f"capsule/{entry['capsule'].split(':', 1)[1][:6]}"
+        )
+    return 0
+
+
+def _cmd_board_submit(args: argparse.Namespace) -> int:
+    entry = get_registry(args.registry).submit_entry(args.name, args.capsule)
+    badge = _TRUST_BADGES.get(entry.get("trust", 0), "?")
+    print(
+        f"scored {entry['score']:.6f} on {args.name} "
+        f"({entry['backend']}, {entry.get('shots')} shots, [{badge}]) — "
+        f"capsule/{entry['capsule'].split(':', 1)[1][:6]}"
+    )
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # registry commands
 # ---------------------------------------------------------------------------
 
@@ -654,6 +722,37 @@ def _build_parser() -> argparse.ArgumentParser:
     p_dc.add_argument("--registry", metavar="URL")
     p_dc.set_defaults(func=_cmd_device_certify)
 
+    # qv board ...
+    p_board = sub.add_parser("board", help="verified leaderboards (RFC-0006)")
+    p_board.set_defaults(func=lambda _args: (p_board.print_help(), 2)[1])
+    board_sub = p_board.add_subparsers(dest="board_command", metavar="ACTION")
+
+    p_bc = board_sub.add_parser("create", help="create a leaderboard")
+    p_bc.add_argument("name", metavar="NAME")
+    p_bc.add_argument("--title", required=True)
+    p_bc.add_argument("--instance", required=True,
+                      help="fully versioned instance ref, e.g. qv:instances/maxcut-triangle@1.0.0")
+    p_bc.add_argument("--metric", default="maxcut-ratio", choices=["maxcut-ratio"])
+    p_bc.add_argument("--lower-is-better", action="store_true")
+    p_bc.add_argument("--min-shots", type=int, help="minimum shots per entry")
+    p_bc.add_argument("--registry", metavar="URL")
+    p_bc.set_defaults(func=_cmd_board_create)
+
+    p_bl = board_sub.add_parser("list", help="list leaderboards")
+    p_bl.add_argument("--registry", metavar="URL")
+    p_bl.set_defaults(func=_cmd_board_list)
+
+    p_bs = board_sub.add_parser("show", help="ranked entries with trust badges")
+    p_bs.add_argument("name", metavar="NAME")
+    p_bs.add_argument("--registry", metavar="URL")
+    p_bs.set_defaults(func=_cmd_board_show)
+
+    p_be = board_sub.add_parser("submit", help="submit a capsule; the registry recomputes the score")
+    p_be.add_argument("name", metavar="NAME")
+    p_be.add_argument("capsule", metavar="CAPSULE_ID")
+    p_be.add_argument("--registry", metavar="URL")
+    p_be.set_defaults(func=_cmd_board_submit)
+
     # qv push / pull / search
     p_push = sub.add_parser("push", help="publish an artifact version to a registry")
     p_push.add_argument("path", metavar="PATH", help="payload file or directory")
@@ -701,6 +800,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         DeviceRecordError,
         SigningError,
         CertifyError,
+        LeaderboardError,
         FileNotFoundError,
         ValueError,
         KeyError,

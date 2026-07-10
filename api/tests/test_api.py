@@ -393,6 +393,69 @@ def test_birth_certificate_recomputed_server_side(client):
     assert client.get("/api/v1/devices/lab/bare/certificate").status_code == 404
 
 
+def test_leaderboard_flow_over_http(client):
+    import quantumverse as qv
+
+    triangle = {
+        "instance_version": "0.1", "name": "maxcut-triangle", "kind": "maxcut",
+        "nodes": 3, "edges": [[0, 1], [1, 2], [0, 2]], "weights": [1, 1, 1],
+        "max_cut_value": 2,
+    }
+    client.post("/api/v1/artifacts/instances/maxcut-triangle", json={"type": "instance"})
+    client.post(
+        "/api/v1/artifacts/instances/maxcut-triangle/versions",
+        json={"version": "1.0.0", "files": {"instance.json": {"text": json.dumps(triangle)}}},
+    )
+
+    board = {
+        "board_version": "0.1", "name": "maxcut-triangle", "title": "MaxCut on K3",
+        "instance": "qv:instances/maxcut-triangle@1.0.0", "metric": "maxcut-ratio",
+        "higher_is_better": True,
+    }
+    assert client.post("/api/v1/leaderboards", json=board).status_code == 201
+    assert client.post("/api/v1/leaderboards", json=board).status_code == 409
+    assert client.post(
+        "/api/v1/leaderboards",
+        json={**board, "name": "broken", "instance": "qv:instances/missing@1.0.0"},
+    ).status_code == 422
+
+    qaoa = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\n'
+        "input float gamma;\ninput float beta;\nqubit[3] q;\nbit[3] c;\n"
+        "h q[0];\nh q[1];\nh q[2];\n"
+        "cx q[0], q[1];\nrz(2*gamma) q[1];\ncx q[0], q[1];\n"
+        "cx q[1], q[2];\nrz(2*gamma) q[2];\ncx q[1], q[2];\n"
+        "cx q[0], q[2];\nrz(2*gamma) q[2];\ncx q[0], q[2];\n"
+        "rx(2*beta) q[0];\nrx(2*beta) q[1];\nrx(2*beta) q[2];\nc = measure q;\n"
+    )
+    with qv.capture(title="QAOA K3", authors=["API test"]) as cap:
+        cap.run(qaoa, shots=4096, seed=42,
+                params={"gamma": 1.8785555922, "beta": 1.2630370614})
+    capsule = cap.capsule()
+    client.post("/api/v1/capsules", json=_capsule_payload(capsule))
+
+    # unknown capsule -> 404 (push first)
+    assert client.post(
+        "/api/v1/leaderboards/maxcut-triangle/entries",
+        json={"capsule": "sha256:" + "0" * 64},
+    ).status_code == 404
+
+    response = client.post(
+        "/api/v1/leaderboards/maxcut-triangle/entries", json={"capsule": capsule.id}
+    )
+    assert response.status_code == 201
+    entry = response.json()
+    assert entry["score"] > 0.99
+    assert entry["backend"] == "quantumverse/qv-sim"
+    assert entry["trust"] == 0
+
+    ranked = client.get("/api/v1/leaderboards/maxcut-triangle").json()
+    assert ranked["entries"][0]["rank"] == 1
+    assert ranked["entries"][0]["capsule"] == capsule.id
+    listed = client.get("/api/v1/leaderboards").json()["leaderboards"]
+    assert listed[0]["entry_count"] == 1
+
+
 def test_direct_calibration_submission(client):
     client.post("/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD})
     snapshot = {

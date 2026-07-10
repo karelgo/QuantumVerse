@@ -65,11 +65,29 @@ CREATE TABLE IF NOT EXISTS certificates (
     passed    INTEGER NOT NULL,
     doc       TEXT NOT NULL      -- JSON certificate, recomputed server-side (RFC-0005)
 );
+CREATE TABLE IF NOT EXISTS boards (
+    name       TEXT PRIMARY KEY,
+    definition TEXT NOT NULL     -- JSON board definition (RFC-0006)
+);
+CREATE TABLE IF NOT EXISTS board_entries (
+    id        INTEGER PRIMARY KEY,
+    board     TEXT NOT NULL REFERENCES boards(name),
+    capsule   TEXT NOT NULL,     -- capsule id
+    entry     TEXT NOT NULL,     -- JSON entry, recomputed server-side
+    submitted TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE (board, capsule)
+);
 """
 
 
 # calibration_summary is shared with the client (quantumverse.devices) so
 # timelines are derived identically everywhere.
+
+
+def _utc_now() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class StoreError(ValueError):
@@ -513,6 +531,108 @@ class Store:
         if cert_row is None:
             raise NotFound(f"device {namespace}/{name} has no birth certificate")
         return json.loads(cert_row["doc"])
+
+    # -- leaderboards (RFC-0006) ------------------------------------------------------
+
+    def _resolve_instance(self, ref: str) -> dict:
+        from quantumverse.uris import parse_uri
+
+        uri = parse_uri(ref)
+        resolved = self.get_version(uri.namespace, uri.name, uri.version)
+        if resolved["type"] != "instance":
+            raise StoreError(
+                f"leaderboard instance {ref} is a {resolved['type']!r} artifact, not an instance"
+            )
+        digest = resolved["files"].get("instance.json")
+        if digest is None:
+            raise StoreError(f"{ref} has no instance.json payload")
+        return json.loads(self.get_blob(digest).decode("utf-8"))
+
+    def create_board(self, board: dict) -> dict:
+        self._resolve_instance(board["instance"])  # the pin must resolve in this store
+        with self._lock, self._connect() as conn:
+            exists = conn.execute(
+                "SELECT 1 FROM boards WHERE name=?", (board["name"],)
+            ).fetchone()
+            if exists:
+                raise Conflict(f"leaderboard {board['name']!r} already exists")
+            conn.execute(
+                "INSERT INTO boards (name, definition) VALUES (?, ?)",
+                (board["name"], json.dumps(board, sort_keys=True)),
+            )
+        return board
+
+    def list_boards(self) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT name, definition FROM boards ORDER BY name").fetchall()
+            out = []
+            for row in rows:
+                count = conn.execute(
+                    "SELECT COUNT(*) AS n FROM board_entries WHERE board=?", (row["name"],)
+                ).fetchone()["n"]
+                out.append({**json.loads(row["definition"]), "entry_count": count})
+        return out
+
+    def get_board(self, name: str) -> dict:
+        from quantumverse.leaderboard import rank_entries
+
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT definition FROM boards WHERE name=?", (name,)
+            ).fetchone()
+            if row is None:
+                raise NotFound(f"leaderboard {name!r} not found")
+            definition = json.loads(row["definition"])
+            entries = [
+                json.loads(r["entry"])
+                for r in conn.execute(
+                    "SELECT entry FROM board_entries WHERE board=?", (name,)
+                )
+            ]
+        return {
+            **definition,
+            "entries": rank_entries(entries, definition["higher_is_better"]),
+        }
+
+    def submit_entry(self, name: str, capsule_ref: str) -> dict:
+        from quantumverse.leaderboard import LeaderboardError, score_capsule_files
+        from quantumverse.signing import trust_level
+
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT definition FROM boards WHERE name=?", (name,)
+            ).fetchone()
+        if row is None:
+            raise NotFound(f"leaderboard {name!r} not found")
+        definition = json.loads(row["definition"])
+        instance = self._resolve_instance(definition["instance"])
+
+        hexid = capsule_ref.split(":", 1)[1] if capsule_ref.startswith("sha256:") else capsule_ref
+        capsule_record = self.get_capsule(hexid)
+        files = {
+            path: self.get_blob(digest) for path, digest in capsule_record["files"].items()
+        }
+        entry = score_capsule_files(definition, instance, capsule_record["id"], files)
+        min_shots = definition.get("min_shots")
+        if min_shots and (entry["shots"] or 0) < min_shots:
+            raise LeaderboardError(
+                f"board {name!r} requires at least {min_shots} shots, capsule has {entry['shots']}"
+            )
+        entry["trust"] = trust_level(files, capsule_record["id"])[0]
+
+        with self._lock, self._connect() as conn:
+            existing = conn.execute(
+                "SELECT submitted FROM board_entries WHERE board=? AND capsule=?",
+                (name, entry["capsule"]),
+            ).fetchone()
+            submitted = existing["submitted"] if existing else _utc_now()
+            entry["submitted"] = submitted
+            conn.execute(
+                "INSERT OR REPLACE INTO board_entries (board, capsule, entry, submitted)"
+                " VALUES (?, ?, ?, ?)",
+                (name, entry["capsule"], json.dumps(entry, sort_keys=True), submitted),
+            )
+        return entry
 
     def device_capsules(self, namespace: str, name: str) -> list[dict]:
         with self._connect() as conn:

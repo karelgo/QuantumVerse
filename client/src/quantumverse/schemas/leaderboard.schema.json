@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/leaderboard.schema.json",
+  "title": "Leaderboard definition (RFC-0006)",
+  "type": "object",
+  "required": ["board_version", "name", "title", "instance", "metric", "higher_is_better"],
+  "additionalProperties": false,
+  "properties": {
+    "board_version": { "const": "0.1" },
+    "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 64 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "instance": {
+      "description": "Fully versioned RFC-0003 artifact reference — scores are only comparable against byte-identical inputs.",
+      "type": "string",
+      "pattern": "^qv:[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*@[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "metric": { "enum": ["maxcut-ratio"] },
+    "higher_is_better": { "type": "boolean" },
+    "min_shots": { "type": "integer", "minimum": 1 }
+  }
+}

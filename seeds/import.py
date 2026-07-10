@@ -12,6 +12,7 @@ idempotent (already-published versions are reported and skipped).
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -104,6 +105,26 @@ def main(argv: list[str] | None = None) -> int:
         else:
             raise
 
+    # A first verified leaderboard (RFC-0006): MaxCut on K3, scored from counts.
+    try:
+        registry.create_board(
+            {
+                "board_version": "0.1",
+                "name": "maxcut-triangle",
+                "title": "MaxCut on K3 — expected cut ratio",
+                "instance": f"qv:instances/maxcut-triangle@{VERSION}",
+                "metric": "maxcut-ratio",
+                "higher_is_better": True,
+                "min_shots": 1000,
+            }
+        )
+        print("board   maxcut-triangle")
+    except RegistryError as exc:
+        if "already" in str(exc) or "409" in str(exc):
+            print("exists  board maxcut-triangle")
+        else:
+            raise
+
     if args.with_capsule:
         qasm_text = (SEEDS / "circuits" / "bell.qasm").read_text(encoding="utf-8")
         result = run(parse_qasm(qasm_text), shots=4096, seed=42)
@@ -126,6 +147,26 @@ def main(argv: list[str] | None = None) -> int:
         )
         capsule_id = registry.push_capsule(capsule.files)
         print(f"capsule capsule/{capsule.short_id}  {capsule_id}")
+
+        # First leaderboard entry: the converged QAOA angles, captured and scored.
+        from quantumverse.capture import capture
+
+        qaoa_text = (SEEDS / "circuits" / "qaoa-maxcut-triangle.qasm").read_text(encoding="utf-8")
+        params = json.loads(
+            (SEEDS / "parameters" / "qaoa-maxcut-triangle-params.json").read_text(encoding="utf-8")
+        )["parameters"]
+        with capture(
+            title="QAOA p=1 on K3 at converged angles (seed 42)",
+            authors=[{"name": "QuantumVerse seeds"}],
+            artifacts={
+                "circuit": f"qv:seeds/qaoa-maxcut-triangle@{VERSION}",
+                "instance": f"qv:instances/maxcut-triangle@{VERSION}",
+            },
+        ) as cap:
+            cap.run(qaoa_text, shots=4096, seed=42, params=params)
+        qaoa_capsule_id = cap.publish(registry=registry)
+        entry = registry.submit_entry("maxcut-triangle", qaoa_capsule_id)
+        print(f"entry   maxcut-triangle: score {entry['score']} ({entry['backend']})")
 
     return 0
 

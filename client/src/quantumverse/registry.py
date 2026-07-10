@@ -67,6 +67,7 @@ class LocalRegistry:
         index.setdefault("artifacts", {})
         index.setdefault("capsules", {})
         index.setdefault("devices", {})
+        index.setdefault("boards", {})
         return index
 
     def _save_index(self, index: dict) -> None:
@@ -356,6 +357,91 @@ class LocalRegistry:
             raise RegistryError(f"device {namespace}/{name} has no birth certificate")
         return certificates[-1]
 
+    # -- leaderboards (RFC-0006) -------------------------------------------------------
+
+    def _resolve_instance(self, ref: str) -> dict:
+        from .uris import parse_uri
+
+        uri = parse_uri(ref)
+        resolved = self.resolve(uri.namespace, uri.name, uri.version)
+        if resolved["type"] != "instance":
+            raise RegistryError(
+                f"leaderboard instance {ref} is a {resolved['type']!r} artifact, not an instance"
+            )
+        digest = resolved["files"].get("instance.json")
+        if digest is None:
+            raise RegistryError(f"{ref} has no instance.json payload")
+        return json.loads(self.get_blob(digest).decode("utf-8"))
+
+    def create_board(self, board: dict) -> dict:
+        from .leaderboard import validate_board
+
+        validate_board(board)
+        self._resolve_instance(board["instance"])  # pin must resolve here
+        index = self._load_index()
+        if board["name"] in index["boards"]:
+            raise RegistryError(f"leaderboard {board['name']!r} already exists")
+        index["boards"][board["name"]] = {"definition": board, "entries": []}
+        self._save_index(index)
+        return board
+
+    def list_boards(self) -> list[dict]:
+        index = self._load_index()
+        return [
+            {**record["definition"], "entry_count": len(record["entries"])}
+            for _, record in sorted(index["boards"].items())
+        ]
+
+    def get_board(self, name: str) -> dict:
+        from .leaderboard import rank_entries
+
+        index = self._load_index()
+        record = index["boards"].get(name)
+        if record is None:
+            raise RegistryError(f"leaderboard {name!r} not found")
+        definition = record["definition"]
+        return {
+            **definition,
+            "entries": rank_entries(record["entries"], definition["higher_is_better"]),
+        }
+
+    def submit_entry(self, name: str, capsule_ref: str) -> dict:
+        from .leaderboard import LeaderboardError, score_capsule_files
+        from .signing import trust_level
+
+        index = self._load_index()
+        record = index["boards"].get(name)
+        if record is None:
+            raise RegistryError(f"leaderboard {name!r} not found")
+        definition = record["definition"]
+        instance = self._resolve_instance(definition["instance"])
+
+        hexid = capsule_ref.split(":", 1)[1] if capsule_ref.startswith("sha256:") else capsule_ref
+        capsule_record = self.get_capsule(hexid)
+        files = {
+            path: self.get_blob(digest) for path, digest in capsule_record["files"].items()
+        }
+        entry = score_capsule_files(definition, instance, capsule_record["id"], files)
+        min_shots = definition.get("min_shots")
+        if min_shots and (entry["shots"] or 0) < min_shots:
+            raise LeaderboardError(
+                f"board {name!r} requires at least {min_shots} shots, capsule has {entry['shots']}"
+            )
+        entry["trust"] = trust_level(files, capsule_record["id"])[0]
+        entry["submitted"] = _utc_now()
+
+        entries = [e for e in record["entries"] if e["capsule"] != entry["capsule"]]
+        entries.append(entry)
+        record["entries"] = entries
+        self._save_index(index)
+        return entry
+
+
+def _utc_now() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
 
 class RemoteRegistry:
     """RFC-0003 HTTP mapping against a QuantumVerse registry server."""
@@ -489,6 +575,25 @@ class RemoteRegistry:
     def get_certificate(self, namespace: str, name: str) -> dict:
         return self._request(
             "GET", f"/api/v1/devices/{namespace}/{name}/certificate"
+        ).json()
+
+    # -- leaderboards (RFC-0006) ---------------------------------------------------------
+
+    def create_board(self, board: dict) -> dict:
+        from .leaderboard import validate_board
+
+        validate_board(board)
+        return self._request("POST", "/api/v1/leaderboards", json=board).json()
+
+    def list_boards(self) -> list[dict]:
+        return self._request("GET", "/api/v1/leaderboards").json()["leaderboards"]
+
+    def get_board(self, name: str) -> dict:
+        return self._request("GET", f"/api/v1/leaderboards/{name}").json()
+
+    def submit_entry(self, name: str, capsule_ref: str) -> dict:
+        return self._request(
+            "POST", f"/api/v1/leaderboards/{name}/entries", json={"capsule": capsule_ref}
         ).json()
 
 

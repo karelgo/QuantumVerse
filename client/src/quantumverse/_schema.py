@@ -17,6 +17,7 @@ SCHEMA_NAMES = {
     "device-record": "device-record.schema.json",
     "signature": "signature.schema.json",
     "certificate": "certificate.schema.json",
+    "leaderboard": "leaderboard.schema.json",
 }
 
 

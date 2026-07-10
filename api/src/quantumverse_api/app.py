@@ -72,6 +72,10 @@ class CertificateSubmission(BaseModel):
     capsules: list[str] = Field(min_length=1)
 
 
+class EntrySubmission(BaseModel):
+    capsule: str
+
+
 def _check_ref(namespace: str, name: str) -> None:
     try:
         uri = parse_uri(f"{namespace}/{name}")
@@ -329,6 +333,46 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
             return store.get_certificate(owner, name)
         except NotFound as exc:
             raise HTTPException(404, str(exc)) from exc
+
+    # -- leaderboards (RFC-0006) ------------------------------------------------------
+
+    @app.post("/api/v1/leaderboards", status_code=201)
+    def create_board(board: dict) -> dict:
+        from quantumverse.leaderboard import LeaderboardError, validate_board
+
+        try:
+            validate_board(board)
+            return store.create_board(board)
+        except LeaderboardError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except Conflict as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except NotFound as exc:
+            raise HTTPException(422, f"instance pin does not resolve: {exc}") from exc
+        except StoreError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.get("/api/v1/leaderboards")
+    def list_boards() -> dict:
+        return {"leaderboards": store.list_boards()}
+
+    @app.get("/api/v1/leaderboards/{name}")
+    def get_board(name: str) -> dict:
+        try:
+            return store.get_board(name)
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/v1/leaderboards/{name}/entries", status_code=201)
+    def submit_entry(name: str, body: EntrySubmission) -> dict:
+        from quantumverse.leaderboard import LeaderboardError
+
+        try:
+            return store.submit_entry(name, body.capsule)
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except (LeaderboardError, Conflict, StoreError) as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     # -- search ------------------------------------------------------------------
 

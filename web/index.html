@@ -76,6 +76,10 @@
       <h2>Devices</h2>
       <div id="deviceList"></div>
     </div>
+    <div id="boards" hidden>
+      <h2>Leaderboards</h2>
+      <div id="boardList"></div>
+    </div>
   </section>
 
   <section class="panel">
@@ -188,6 +192,34 @@ async function fetchDevices() {
     }
     document.getElementById('devices').hidden = false;
   } catch { /* devices panel is registry-only */ }
+}
+
+async function fetchBoards() {
+  // Verified leaderboards (RFC-0006): every score recomputed by the registry
+  // from a capsule's raw counts — nothing self-reported.
+  try {
+    const resp = await fetch('./api/v1/leaderboards');
+    if (!resp.ok) return;
+    const boards = (await resp.json()).leaderboards ?? [];
+    if (!boards.length) return;
+    const list = document.getElementById('boardList');
+    list.innerHTML = '';
+    const badges = { 0: '·', 1: '✓', 2: '✓✓' };
+    for (const summary of boards) {
+      const board = await (await fetch(`./api/v1/leaderboards/${summary.name}`)).json();
+      const div = document.createElement('div');
+      div.className = 'device-card';
+      const rows = (board.entries ?? []).slice(0, 5).map(e =>
+        `#${e.rank} ${e.score.toFixed(4)} · ${e.backend} [${badges[e.trust] ?? '?'}]`
+      ).join('<br>') || 'no entries yet';
+      div.innerHTML =
+        `<div class="d-ref">${board.title}</div>` +
+        `<div class="d-meta">${board.metric} on ${board.instance}</div>` +
+        `<div class="d-meta">${rows}</div>`;
+      list.appendChild(div);
+    }
+    document.getElementById('boards').hidden = false;
+  } catch { /* leaderboards panel is registry-only */ }
 }
 
 async function fetchAnsatzParams() {
@@ -359,6 +391,7 @@ async function buildLibrary() {
     items = await fetchRegistryLibrary();
     await fetchAnsatzParams();
     fetchDevices();
+    fetchBoards();
     note = `${items.length} circuits from the live registry`;
   } catch {
     items = EXAMPLES;
