@@ -30,6 +30,8 @@
 
 ## 3. Federation
 
+*Now specified in [RFC-0007](rfcs/rfc-0007-federation.md) and implemented: `qv sync <registry-url>` pulls another instance's public catalog into yours, content-addressed so capsule ids match and every card/score/verdict is re-derived on arrival.*
+
 **What it is.** Self-hostable instances — a university group, a national lab, a company — that run their own QuantumVerse, keep sensitive artifacts private, and publish or sync public ones to the commons like git remotes pushing to a shared upstream.
 
 **Why it's novel.** It's only possible *because* the [formats are open specs first](VISION.md#9-open-source-open-governance): a capsule from a lab's private instance is byte-identical to one from the main hub, so it can cross the boundary without translation. Federation is the credible answer to the objection every centralized platform eventually faces — single point of control, data sovereignty, "what happens when the company changes the terms." A national lab that would never upload pre-publication results to someone else's server *will* run its own node and share the finished, citable capsule. Neutrality stops being a promise and becomes an architecture.

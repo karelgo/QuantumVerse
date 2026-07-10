@@ -286,6 +286,16 @@ class LocalRegistry:
         files = {path: self.get_blob(digest) for path, digest in record["files"].items()}
         return record["id"], files
 
+    def artifact_files(
+        self, namespace: str, name: str, version: str
+    ) -> tuple[dict, dict[str, bytes]]:
+        """Resolve an artifact version to (record, {path: bytes})."""
+        resolved = self.resolve(namespace, name, version)
+        files = {
+            path: self.get_blob(digest) for path, digest in resolved["files"].items()
+        }
+        return resolved, files
+
     def get_capsule(self, hexid: str) -> dict:
         hexid = self.normalize_capsule_ref(hexid)
         if not hexid or any(c not in "0123456789abcdef" for c in hexid):
@@ -433,6 +443,49 @@ class LocalRegistry:
         return {
             **definition,
             "entries": rank_entries(record["entries"], definition["higher_is_better"]),
+        }
+
+    # -- federation (RFC-0007) ------------------------------------------------------
+
+    def catalog(self) -> dict:
+        """This registry's federation catalog — ids/digests only (RFC-0007)."""
+        index = self._load_index()
+        artifacts = [
+            {
+                "namespace": key.split("/", 1)[0],
+                "name": key.split("/", 1)[1],
+                "type": record["type"],
+                "versions": sorted(record["versions"]),
+            }
+            for key, record in sorted(index["artifacts"].items())
+        ]
+        capsules = [f"sha256:{hexid}" for hexid in sorted(index["capsules"])]
+        devices = []
+        for key, entry in sorted(index["devices"].items()):
+            certificates = [
+                [check["capsule"] for check in cert.get("checks", [])]
+                for cert in entry.get("certificates", [])
+            ]
+            devices.append(
+                {
+                    "ref": f"qv:device/{key}",
+                    "record": entry["record"],
+                    "certificates": certificates,
+                }
+            )
+        boards = [
+            {
+                "definition": record["definition"],
+                "entries": [e["capsule"] for e in record["entries"]],
+            }
+            for _, record in sorted(index["boards"].items())
+        ]
+        return {
+            "catalog_version": "0.1",
+            "artifacts": artifacts,
+            "capsules": capsules,
+            "devices": devices,
+            "boards": boards,
         }
 
     def submit_entry(self, name: str, capsule_ref: str) -> dict:
@@ -626,6 +679,22 @@ class RemoteRegistry:
         return self._request(
             "POST", f"/api/v1/leaderboards/{name}/entries", json={"capsule": capsule_ref}
         ).json()
+
+    # -- federation (RFC-0007) ------------------------------------------------------
+
+    def artifact_files(
+        self, namespace: str, name: str, version: str
+    ) -> tuple[dict, dict[str, bytes]]:
+        """Resolve an artifact version to (record, {path: bytes})."""
+        resolved = self.resolve(namespace, name, version)
+        files = {
+            path: self.get_blob(digest) for path, digest in resolved["files"].items()
+        }
+        return resolved, files
+
+    def catalog(self) -> dict:
+        """Fetch this registry's federation catalog (RFC-0007)."""
+        return self._request("GET", "/api/v1/federation/catalog").json()
 
 
 Registry = Union[LocalRegistry, RemoteRegistry]

@@ -18,6 +18,7 @@ SCHEMA_NAMES = {
     "signature": "signature.schema.json",
     "certificate": "certificate.schema.json",
     "leaderboard": "leaderboard.schema.json",
+    "federation-catalog": "federation-catalog.schema.json",
 }
 
 

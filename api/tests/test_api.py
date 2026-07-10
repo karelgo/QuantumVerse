@@ -233,6 +233,18 @@ def test_capsule_lookup_errors(client):
     assert client.get("/api/v1/capsules/abcdef").status_code == 404
 
 
+def test_federation_catalog(client):
+    _publish_bell(client)
+    capsule = _bell_capsule()
+    client.post("/api/v1/capsules", json=_capsule_payload(capsule))
+    catalog = client.get("/api/v1/federation/catalog").json()
+    assert catalog["catalog_version"] == "0.1"
+    assert any(a["name"] == "bell" and a["versions"] == ["1.0.0"] for a in catalog["artifacts"])
+    assert capsule.id in catalog["capsules"]
+    # the catalog carries ids only — no computed cards or scores
+    assert "card" not in json.dumps(catalog["artifacts"])
+
+
 def test_repush_cannot_strip_signature(client, tmp_path, monkeypatch):
     from quantumverse.signing import generate_keypair, sign_files
 

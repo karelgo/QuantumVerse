@@ -470,6 +470,61 @@ class Store:
             ).fetchall()
         return [self.get_device(r["namespace"], r["name"]) for r in rows]
 
+    def catalog(self) -> dict:
+        """Federation catalog (RFC-0007): what this registry offers to peers.
+
+        Digests/ids only — no blob bytes, no computed cards/scores/verdicts.
+        Certificates and board entries are expressed as the capsule-id lists
+        that produced them, so a puller re-derives every result.
+        """
+        artifacts = [
+            {
+                "namespace": a["namespace"],
+                "name": a["name"],
+                "type": a["type"],
+                "versions": a["versions"],
+            }
+            for a in self.list_artifacts()
+        ]
+        capsules = [c["id"] for c in self.list_capsules()]
+        devices = []
+        with self._connect() as conn:
+            device_rows = conn.execute(
+                "SELECT id, namespace, name, record FROM devices ORDER BY namespace, name"
+            ).fetchall()
+            for row in device_rows:
+                cert_rows = conn.execute(
+                    "SELECT doc FROM certificates WHERE device_id=? ORDER BY issued, id",
+                    (row["id"],),
+                ).fetchall()
+                certificates = [
+                    [check["capsule"] for check in json.loads(cr["doc"]).get("checks", [])]
+                    for cr in cert_rows
+                ]
+                devices.append(
+                    {
+                        "ref": f"qv:device/{row['namespace']}/{row['name']}",
+                        "record": json.loads(row["record"]),
+                        "certificates": certificates,
+                    }
+                )
+        boards = [
+            {
+                "definition": {
+                    k: v for k, v in b.items() if k != "entry_count"
+                },
+                "entries": [e["capsule"] for e in self.get_board(b["name"])["entries"]],
+            }
+            for b in self.list_boards()
+        ]
+        return {
+            "catalog_version": "0.1",
+            "artifacts": artifacts,
+            "capsules": capsules,
+            "devices": devices,
+            "boards": boards,
+        }
+
     def add_calibration(
         self, namespace: str, name: str, device_doc: dict, raw: bytes, capsule: Optional[str] = None
     ) -> dict:

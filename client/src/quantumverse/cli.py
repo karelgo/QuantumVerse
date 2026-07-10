@@ -24,6 +24,7 @@ from .certify import (
     threshold,
 )
 from .devices import RECORD_VERSION, DeviceRecordError
+from .federation import FederationError, sync as federation_sync
 from .leaderboard import LeaderboardError
 from .registry import RegistryError, get_registry
 from .signing import SigningError, generate_keypair, key_info, sign_files, trust_level
@@ -534,6 +535,14 @@ def _cmd_pull(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_sync(args: argparse.Namespace) -> int:
+    report = federation_sync(args.source, dest=args.into)
+    print(report.summary())
+    for warning in report.warnings:
+        print(f"  warn: {warning}")
+    return 0
+
+
 def _cmd_search(args: argparse.Namespace) -> int:
     results = get_registry(args.registry).search(args.query, type=args.type)
     if not results:
@@ -770,6 +779,15 @@ def _build_parser() -> argparse.ArgumentParser:
     p_pull.add_argument("--registry", metavar="URL", help="registry URL (default: QV_REGISTRY_URL or ~/.qv)")
     p_pull.set_defaults(func=_cmd_pull)
 
+    # qv sync
+    p_sync = sub.add_parser(
+        "sync", help="federate: pull another registry's public objects into one (RFC-0007)"
+    )
+    p_sync.add_argument("source", metavar="SOURCE_URL", help="the registry to pull from")
+    p_sync.add_argument("--into", metavar="URL",
+                        help="destination registry (default: QV_REGISTRY_URL or local ~/.qv)")
+    p_sync.set_defaults(func=_cmd_sync)
+
     p_search = sub.add_parser("search", help="search a registry")
     p_search.add_argument("query", metavar="QUERY")
     p_search.add_argument("--type", choices=list(ARTIFACT_TYPES), help="filter by artifact type")
@@ -800,6 +818,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         SigningError,
         CertifyError,
         LeaderboardError,
+        FederationError,
         FileNotFoundError,
         ValueError,
         KeyError,

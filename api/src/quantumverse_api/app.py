@@ -402,6 +402,12 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
             )
         return {"results": results}
 
+    # -- federation (RFC-0007) ------------------------------------------------------
+
+    @app.get("/api/v1/federation/catalog")
+    def federation_catalog() -> dict:
+        return store.catalog()
+
     # -- static playground (optional) ----------------------------------------------
 
     web_dir = web_dir or os.environ.get("QV_WEB_DIR")

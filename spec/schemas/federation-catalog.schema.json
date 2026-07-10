@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/federation-catalog.schema.json",
+  "title": "Federation catalog (RFC-0007)",
+  "type": "object",
+  "required": ["catalog_version", "artifacts", "capsules", "devices", "boards"],
+  "additionalProperties": false,
+  "properties": {
+    "catalog_version": { "const": "0.1" },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["namespace", "name", "type", "versions"],
+        "additionalProperties": false,
+        "properties": {
+          "namespace": { "type": "string" },
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "versions": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "capsules": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+    },
+    "devices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ref", "record", "certificates"],
+        "additionalProperties": false,
+        "properties": {
+          "ref": { "type": "string" },
+          "record": { "type": "object" },
+          "certificates": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    "boards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["definition", "entries"],
+        "additionalProperties": false,
+        "properties": {
+          "definition": { "type": "object" },
+          "entries": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+          }
+        }
+      }
+    }
+  }
+}

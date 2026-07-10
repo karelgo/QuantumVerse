@@ -33,3 +33,4 @@ Anything another implementation would have to interoperate with: artifact format
 | [0004](rfc-0004-device-records.md) | Device records and the Device Registry | Draft |
 | [0005](rfc-0005-birth-certificate.md) | The birth certificate (commissioning suite) | Draft |
 | [0006](rfc-0006-verified-leaderboards.md) | Verified leaderboards | Draft |
+| [0007](rfc-0007-federation.md) | Federation | Draft |

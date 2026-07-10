@@ -30,6 +30,7 @@ qv device certify quantumverse/qv-sim --seed 7         # birth certificate (RFC-
 qv board show maxcut-triangle                          # verified leaderboard (RFC-0006)
 qv board submit maxcut-triangle <capsule-id>           # the registry recomputes your score
 qv capsule cite cap.tar                                # BibTeX, straight from the manifest
+qv sync https://another-instance.example              # federate: pull a peer's public catalog (RFC-0007)
 qv-mcp                                                 # MCP server: agents search/load/run/verify
 ```
 
@@ -88,7 +89,7 @@ And the machines themselves become citizens, not just backends: a **Device Regis
 | [`FRONTEND-PLAN.md`](FRONTEND-PLAN.md) | The web frontend — design system, page inventory, quality bar |
 | [`web/`](web/README.md) | The frontend itself — Next.js app: artifact pages, in-browser simulator, capsule verification |
 | [`COMPETITIVE-LANDSCAPE.md`](COMPETITIVE-LANDSCAPE.md) | Honest map of adjacent projects and where the whitespace is |
-| [`rfcs/`](rfcs/) | Open specifications, developed by public RFC (0001 Capsule · 0002 Card · 0003 addressing · 0004 devices · 0005 certificates · 0006 leaderboards) |
+| [`rfcs/`](rfcs/) | Open specifications, developed by public RFC (0001 Capsule · 0002 Card · 0003 addressing · 0004 devices · 0005 certificates · 0006 leaderboards · 0007 federation) |
 | [`spec/`](spec/) | Machine-readable JSON Schemas backing the RFCs |
 | [`client/`](client/) | `quantumverse` Python package + `qv` CLI — capsules, cards, simulator, diff, CI, push/pull |
 | [`api/`](api/) | `qv-registry` — the reference registry server (FastAPI, SQLite, content-addressed blobs) |
