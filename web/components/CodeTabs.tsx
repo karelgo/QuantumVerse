@@ -1,26 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import CopyButton from "./CopyButton";
 
 export interface CodeTab {
   label: string;
   code: string;
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      className={`copy-btn${copied ? " copied" : ""}`}
-      onClick={async () => {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1600);
-      }}
-    >
-      {copied ? "copied" : "copy"}
-    </button>
-  );
 }
 
 export default function CodeTabs({ tabs }: { tabs: CodeTab[] }) {

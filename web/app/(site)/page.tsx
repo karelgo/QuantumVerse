@@ -2,6 +2,8 @@ import ArtifactCard from "@/components/ArtifactCard";
 import SearchBar from "@/components/SearchBar";
 import { listArtifacts } from "@/lib/api";
 
+export const revalidate = 300;
+
 export default async function Home() {
   const artifacts = await listArtifacts();
   const flagship = [

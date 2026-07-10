@@ -7,8 +7,13 @@ export default function SiteLayout({
 }) {
   return (
     <>
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       <SiteHeader />
-      <main className="container page">{children}</main>
+      <main id="main" className="container page">
+        {children}
+      </main>
       <SiteFooter />
     </>
   );

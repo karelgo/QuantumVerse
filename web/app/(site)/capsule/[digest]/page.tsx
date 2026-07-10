@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import CircuitSVG from "@/components/CircuitSVG";
 import CodeTabs from "@/components/CodeTabs";
-import Histogram from "@/components/Histogram";
+import Digest from "@/components/Digest";
+import ExecutionCounts from "@/components/ExecutionCounts";
 import RunPanel from "@/components/RunPanel";
 import TrustBadge from "@/components/TrustBadge";
 import { getCapsule } from "@/lib/api";
 import { parseQasm } from "@/lib/qasm";
 import { computeResources } from "@/lib/circuit";
 import { formatDate } from "@/lib/format";
+
+// Capsules are immutable (any edit is a new capsule) — cache aggressively.
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -97,8 +101,8 @@ export default async function CapsulePage({
           <tbody>
             <tr>
               <th scope="row">Capsule ID</th>
-              <td className="mono" style={{ wordBreak: "break-all" }}>
-                {c.id}
+              <td>
+                <Digest value={c.id} />
               </td>
             </tr>
             {c.integrity.files.map((f) => (
@@ -106,11 +110,11 @@ export default async function CapsulePage({
                 <th scope="row" className="mono">
                   {f.name}
                 </th>
-                <td className="mono" style={{ wordBreak: "break-all" }}>
+                <td>
                   <span className={f.verified ? "digest-ok" : "digest-bad"}>
                     {f.verified ? "✓" : "✗"}
                   </span>{" "}
-                  {f.digest}
+                  <Digest value={f.digest} />
                 </td>
               </tr>
             ))}
@@ -163,17 +167,20 @@ export default async function CapsulePage({
         <p className="small muted" style={{ marginTop: 0 }}>
           {c.execution.shots.toLocaleString()} shots · job{" "}
           <span className="mono">{c.execution.job_ids.join(", ")}</span> ·
-          submitted {formatDate(c.execution.submitted)} · raw counts, no
-          mitigation applied
+          submitted {formatDate(c.execution.submitted)}
         </p>
-        <Histogram counts={c.execution.counts_raw} shots={c.execution.shots} />
+        <ExecutionCounts
+          countsRaw={c.execution.counts_raw}
+          countsMitigated={c.execution.counts_mitigated}
+          shots={c.execution.shots}
+        />
         {c.mitigation && (
           <p className="small muted" style={{ marginBottom: 0 }}>
             Mitigation pipeline:{" "}
             {c.mitigation.pipeline
               .map((s) => `${s.step} (${s.method})`)
-              .join(" → ")}{" "}
-            — mitigated counts included in <span className="mono">execution.json</span>.
+              .join(" → ")}
+            .
           </p>
         )}
       </section>

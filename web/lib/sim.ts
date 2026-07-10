@@ -18,6 +18,8 @@ export interface SimResult {
   numQubits: number;
   measuredBits: number;
   amplitudes: Amplitude[];
+  /** per-qubit reduced Bloch vectors [⟨X⟩, ⟨Y⟩, ⟨Z⟩], pre-measurement */
+  bloch: [number, number, number][];
   ms: number;
 }
 
@@ -197,6 +199,24 @@ export function simulate(circuit: Circuit, shots: number, seed = 0x5eed): SimRes
     counts[key] = (counts[key] ?? 0) + 1;
   }
 
+  // per-qubit Bloch vectors: ⟨X⟩ = 2ΣRe(ā₀a₁), ⟨Y⟩ = 2ΣIm(ā₀a₁), ⟨Z⟩ = P₀ − P₁
+  const bloch: [number, number, number][] = [];
+  for (let q = 0; q < n; q++) {
+    const step = 1 << q;
+    let bx = 0,
+      by = 0,
+      bz = 0;
+    for (let base = 0; base < dim; base += step << 1) {
+      for (let i = base; i < base + step; i++) {
+        const j = i + step;
+        bx += 2 * (re[i] * re[j] + im[i] * im[j]);
+        by += 2 * (re[i] * im[j] - im[i] * re[j]);
+        bz += re[i] * re[i] + im[i] * im[i] - re[j] * re[j] - im[j] * im[j];
+      }
+    }
+    bloch.push([bx, by, bz]);
+  }
+
   // top amplitudes for the statevector view
   const idx = [...Array(dim).keys()]
     .map((i) => ({ i, prob: re[i] * re[i] + im[i] * im[i] }))
@@ -215,6 +235,7 @@ export function simulate(circuit: Circuit, shots: number, seed = 0x5eed): SimRes
     numQubits: n,
     measuredBits: width,
     amplitudes,
+    bloch,
     ms: Date.now() - t0,
   };
 }

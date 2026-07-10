@@ -1,6 +1,7 @@
 // Server-rendered circuit diagram: the page is readable (and this SVG is
 // crawlable/printable) with JavaScript disabled. Colors ride the theme tokens.
 
+import HScroll from "./HScroll";
 import { parseQasm, type QOp } from "@/lib/qasm";
 import { layoutCircuit } from "@/lib/circuit";
 import { formatRadians } from "@/lib/format";
@@ -150,7 +151,7 @@ export default function CircuitSVG({ qasm }: { qasm: string }) {
   const description = layout.ops.map(opLabel).join("; ");
 
   return (
-    <div className="circuit-scroll">
+    <HScroll>
       <svg
         width={width}
         height={height}
@@ -278,6 +279,6 @@ export default function CircuitSVG({ qasm }: { qasm: string }) {
           }
         })}
       </svg>
-    </div>
+    </HScroll>
   );
 }

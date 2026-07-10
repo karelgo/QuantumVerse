@@ -736,6 +736,189 @@ p {
   font-size: clamp(24px, 3.4vw, 32px);
 }
 
+/* ---------- histogram overlay & legend ---------- */
+.hist-legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+
+.swatch.fill {
+  background: var(--accent-fill);
+}
+
+.swatch.ref {
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.hist .track {
+  position: relative;
+}
+
+.hist .bar-ref {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 65%, transparent);
+  border-radius: 4px;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* ---------- statevector table extras ---------- */
+.phase-tick {
+  display: inline-block;
+  width: 11px;
+  height: 2px;
+  background: var(--accent-fill);
+  border-radius: 1px;
+  margin-right: 7px;
+  vertical-align: 3px;
+}
+
+.prob-track {
+  display: inline-block;
+  width: 72px;
+  height: 8px;
+  background: color-mix(in srgb, var(--line) 45%, transparent);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-right: 9px;
+  vertical-align: 0;
+}
+
+.prob-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-fill);
+  border-radius: 3px;
+}
+
+/* ---------- bloch view ---------- */
+.bloch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.bloch-cell {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+}
+
+.bloch-vals {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* ---------- digests ---------- */
+.digest {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-btn.on-surface {
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.copy-btn.on-surface:hover,
+.copy-btn.on-surface.copied {
+  color: var(--ink);
+}
+
+/* ---------- embed snippet ---------- */
+.embed-code {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.embed-code code {
+  flex: 1;
+  word-break: break-all;
+  color: var(--muted);
+}
+
+/* ---------- scroll edge fades ---------- */
+.hscroll {
+  position: relative;
+}
+
+.hscroll::before,
+.hscroll::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  z-index: 1;
+}
+
+.hscroll::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--surface), transparent);
+}
+
+.hscroll::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--surface), transparent);
+}
+
+.hscroll[data-l="true"]::before,
+.hscroll[data-r="true"]::after {
+  opacity: 1;
+}
+
+/* ---------- skip link ---------- */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--accent-fill);
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: 0 0 10px 0;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
 /* ---------- accessibility & motion ---------- */
 .sr-only {
   position: absolute;

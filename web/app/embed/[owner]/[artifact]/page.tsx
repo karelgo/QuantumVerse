@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import CircuitSVG from "@/components/CircuitSVG";
+import EmbedResizer from "@/components/EmbedResizer";
 import RunPanel from "@/components/RunPanel";
 import { getArtifact } from "@/lib/api";
 
 export const metadata: Metadata = { robots: { index: false } };
+export const revalidate = 3600;
 
 // Chromeless runnable widget for papers, blogs, and courses.
 export default async function EmbedPage({
@@ -19,6 +21,7 @@ export default async function EmbedPage({
 
   return (
     <div style={{ padding: 16 }}>
+      <EmbedResizer />
       <p className="small" style={{ margin: "0 0 4px" }}>
         <a
           href={`/${owner}/${name}`}

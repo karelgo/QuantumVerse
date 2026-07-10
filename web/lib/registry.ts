@@ -126,7 +126,28 @@ function capsuleIds(): string[] {
     .filter((d) => fs.existsSync(path.join(base, d, "manifest.json")));
 }
 
+// Digest recomputation + signature verification is the expensive path and
+// runs for every capsule on every listing. Capsules are immutable, so memoize
+// per directory, keyed by file mtimes/sizes (edits — e.g. tampering — bust it).
+const capsuleCache = new Map<string, { key: string; value: CapsuleDetail }>();
+
 function loadCapsule(dirName: string): CapsuleDetail {
+  const dir = path.join(ROOT, "capsules", dirName);
+  const cacheKey = fs
+    .readdirSync(dir)
+    .map((f) => {
+      const s = fs.statSync(path.join(dir, f));
+      return `${f}:${s.mtimeMs}:${s.size}`;
+    })
+    .join("|");
+  const hit = capsuleCache.get(dirName);
+  if (hit && hit.key === cacheKey) return hit.value;
+  const value = readCapsule(dirName);
+  capsuleCache.set(dirName, { key: cacheKey, value });
+  return value;
+}
+
+function readCapsule(dirName: string): CapsuleDetail {
   const dir = path.join(ROOT, "capsules", dirName);
   const manifest = readJson<CapsuleDetail["manifest"]>("capsules", dirName, "manifest.json");
   const device = readJson<CapsuleDetail["device"]>("capsules", dirName, "device.json");

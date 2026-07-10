@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import ArtifactCard from "@/components/ArtifactCard";
 import { getOwner, listArtifacts } from "@/lib/api";
 
+export const revalidate = 300;
+
 export async function generateMetadata({
   params,
 }: {

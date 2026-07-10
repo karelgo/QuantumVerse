@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import CircuitSVG from "@/components/CircuitSVG";
 import CodeTabs from "@/components/CodeTabs";
+import EmbedSnippet from "@/components/EmbedSnippet";
 import ResourceBadges from "@/components/ResourceBadges";
 import RunPanel from "@/components/RunPanel";
 import TrustBadge from "@/components/TrustBadge";
@@ -10,6 +11,9 @@ import { getArtifact } from "@/lib/api";
 import { toQiskit, loadSnippet } from "@/lib/codegen";
 import { parseQasm } from "@/lib/qasm";
 import { formatDate, formatRadians } from "@/lib/format";
+
+// Artifact versions are immutable — cache the rendered page.
+export const revalidate = 3600;
 
 function parseSlug(slug: string): { name: string; version: string | null } {
   const [name, version] = decodeURIComponent(slug).split("@");
@@ -201,13 +205,28 @@ export default async function ArtifactPage({
         </>
       )}
 
-      <p className="small muted" style={{ marginTop: 40 }}>
-        Embed this artifact:{" "}
-        <span className="mono">
-          &lt;iframe src=&quot;/embed/{ref}&quot;&gt;
-        </span>{" "}
-        · <Link href={`/embed/${ref}`}>preview</Link>
+      <h2>Versions</h2>
+      <section className="card">
+        <table className="meta-table" style={{ margin: 0 }}>
+          <tbody>
+            <tr>
+              <th scope="row" className="mono" style={{ padding: "12px 18px" }}>
+                v{a.version}
+              </th>
+              <td style={{ padding: "12px 0" }}>
+                current · published {formatDate(a.created)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p className="small muted">
+        Versions are immutable; history accumulates here as new versions are
+        pushed.
       </p>
+
+      <h2>Share</h2>
+      <EmbedSnippet refPath={ref} />
     </>
   );
 }
