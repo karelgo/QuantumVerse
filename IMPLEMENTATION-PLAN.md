@@ -108,6 +108,7 @@ The single most important engineering decision: **what not to build.**
 - **Execution adapters + trust tiers.** Route real runs through **qBraid/Braket/IBM/IonQ**; implement the unsigned / author-signed / provider-verified tiers from RFC-0001.
 - **First verified leaderboard.** Deliberately narrow: **one** benchmark suite, **three** backends, automated recurring runs, every entry anchored to a signed capsule. Partner with **Unitary Foundation / metriq-gym** rather than fragment benchmarking.
 - **Drift Observatory v0.** Persist `device.json` calibration snapshots from every capsule into a time-series store; ship the basic weather-map UI (the pitch-site chart, fed by real data).
+- **Device Registry v0.** `device` artifact type + Device Card pages ([HARDWARE.md §1](HARDWARE.md#1-the-device-registry)): identity, topology, native gates, per-machine calibration timeline (the Observatory scoped to one device), and every capsule minted on it. Seed with the cloud backends the execution adapters already touch; open self-registration to lab-built machines.
 
 **Exit gate:** a hardware-results experiment can be captured → published as a citable capsule → replayed (L1 simulate, L2 re-transpile) → and appears on a live, signed leaderboard. First journal in conversation about a "capsule-required" pilot.
 
@@ -126,6 +127,8 @@ The single most important engineering decision: **what not to build.**
 - **Agent-native.** An **MCP server** exposing search/load/verify/publish (see [FRONTIERS.md](FRONTIERS.md)).
 - **Federation.** Draft the federation RFC; self-hostable instances syncing public capsules like git remotes.
 - **Publishing & readiness.** Overlay-journal integrations; the Hardware Readiness Meter fed by community-maintained roadmap data.
+- **Self-hosted QPU runners.** The GitHub-Actions-runner model for hardware ([HARDWARE.md §2](HARDWARE.md#2-self-hosted-quantum-ci-runners)): an agent device owners run to accept dispatched benchmark/CI jobs in idle time, returning signed capsules. Owner-controlled policy (what runs, when, quotas); results update the Device Card automatically.
+- **Birth-certificate suite.** Standardized, capsule-backed commissioning benchmarks ([HARDWARE.md §3](HARDWARE.md#3-the-birth-certificate)) published as an RFC — RB, gate/readout fidelities, a fixed community-benchmark slice — runnable by vendors at installation and citable in procurement.
 
 **Exit gate:** provider partnerships live; private-hosting revenue covers infra; a journal pilot is running; self-hosted instances exist in the wild.
 
@@ -156,7 +159,7 @@ The single most important engineering decision: **what not to build.**
 | 0 | Spec at Review, CI green | Founding contributors recruited |
 | 1 | **Published artifacts** (target 100 → 1,000) | `pip install` count, in-browser runs, first external publishers |
 | 2 | **Verified capsules** minted | Leaderboard entries, DOIs issued, replay runs, first journal pilot |
-| 3 | **MAU + paying orgs** | Provider partnerships, private repos, self-hosted instances, embeds in the wild |
+| 3 | **MAU + paying orgs** | Provider partnerships, private repos, self-hosted instances, embeds in the wild, **registered devices & active runners** |
 
 ## The first ten steps (start here)
 

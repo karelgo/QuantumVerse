@@ -2,7 +2,7 @@
 
 *The next ring of ideas — beyond the three pillars, out where the platform stops being a better place to share quantum work and starts being infrastructure the field can't unsee.*
 
-[VISION.md](VISION.md) makes the case for the Hub, the Verification Layer, and the Playground — the things QuantumVerse must be to exist at all. This document is the horizon past that: five directions that become possible *once the artifact layer exists*, each one compounding a loop the vision already set spinning. They are deliberately ambitious. Some will be wrong. That's what a frontier is for.
+[VISION.md](VISION.md) makes the case for the Hub, the Verification Layer, and the Playground — the things QuantumVerse must be to exist at all. This document is the horizon past that: five directions that become possible *once the artifact layer exists*, each one compounding a loop the vision already set spinning. They are deliberately ambitious. Some will be wrong. That's what a frontier is for. *(A sixth direction grew big enough to earn its own document: [HARDWARE.md](HARDWARE.md), on the machines themselves.)*
 
 ---
 
@@ -12,7 +12,7 @@
 
 **Why it's novel.** Calibration data exists, but it's ephemeral — providers expose a snapshot that's overwritten at the next recalibration, and nobody keeps the history. QuantumVerse already captures a device snapshot inside every [Experiment Capsule](rfcs/rfc-0001-experiment-capsule.md); the Observatory is what you get when you aggregate those snapshots over time and publish the series as a first-class dataset. No one owns the longitudinal record of how quantum hardware actually behaves. That record is scientifically valuable on its own, and it's the missing substrate that makes capsule **replay-diffs** meaningful — "this result degraded 8%" only means something against a baseline of how much the machine itself moved.
 
-**What it compounds.** The **credibility loop**. Reproducibility needs a control group, and drift is the control group. It also turns a liability of the field — hardware instability — into a shared public good, and a genuinely press-worthy visualization.
+**What it compounds.** The **credibility loop**. Reproducibility needs a control group, and drift is the control group. It also turns a liability of the field — hardware instability — into a shared public good, and a genuinely press-worthy visualization. And it has a B2B face: aggregated per-machine, the Observatory becomes the [Device Registry](HARDWARE.md#1-the-device-registry); aggregated per-chip-generation, it becomes [fleet telemetry](HARDWARE.md#4-fleet-telemetry) for the hardware makers themselves.
 
 ---
 
