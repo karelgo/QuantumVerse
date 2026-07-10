@@ -19,6 +19,7 @@ from typing import Optional
 
 import numpy as np
 
+from .canonical import utc_now
 from .capsule import Capsule, CapsuleError
 from .qasm import Circuit, parse_qasm
 from .resources import count_resources
@@ -92,18 +93,17 @@ def circuit_unitary(
             + " (pass param bindings)"
         )
     dim = 2**n
-    unitary = np.zeros((dim, dim), dtype=np.complex128)
-    mats = [
-        (_gate_matrix(op.name, _resolve_params(op, bindings)), op.qubits)
-        for op in stripped.ops
-    ]
-    for col in range(dim):
-        state = np.zeros(dim, dtype=np.complex128)
-        state[col] = 1.0
-        for mat, qubits in mats:
-            state = _apply(state, n, mat, qubits)
-        unitary[:, col] = state
-    return unitary
+    # Apply each gate once to the whole operator instead of simulating all 2^n
+    # basis columns separately. Flattened row-major, U[row, col] lives at index
+    # row*dim + col, so the row block occupies the high n qubits of a 2n-qubit
+    # register — acting on qubits [q + n] left-multiplies U by the gate (G @ U),
+    # which is exactly evolving every column. Bit-for-bit identical, far fewer
+    # numpy dispatches.
+    flat = np.eye(dim, dtype=np.complex128).reshape(-1)
+    for op in stripped.ops:
+        mat = _gate_matrix(op.name, _resolve_params(op, bindings))
+        flat = _apply(flat, 2 * n, mat, [q + n for q in op.qubits])
+    return flat.reshape(dim, dim)
 
 
 @dataclass
@@ -310,7 +310,7 @@ def replay_l1(capsule: Capsule, seed: Optional[int] = None) -> ReplayReport:
 
     device = {
         "backend": {"provider": "quantumverse", "name": "qv-sim", "version": "0.1.0"},
-        "captured": _now(),
+        "captured": utc_now(),
         "topology": {"num_qubits": circuit.num_qubits},
         "qubits": [],
         "gates": [],
@@ -339,12 +339,6 @@ def replay_l1(capsule: Capsule, seed: Optional[int] = None) -> ReplayReport:
         replay_level="L1",
     )
     return ReplayReport(original_id=original_id, replay=replay, tv_distance=tv, verdict=verdict)
-
-
-def _now() -> str:
-    from datetime import datetime, timezone
-
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 # ---------------------------------------------------------------------------

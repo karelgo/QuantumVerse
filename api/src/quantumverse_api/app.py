@@ -10,29 +10,28 @@ from __future__ import annotations
 
 import base64
 import os
-import re
 from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from quantumverse._schema import schema_errors
 from quantumverse.capsule import Capsule
 from quantumverse.cards import CardError, build_card
 from quantumverse.hub import ARTIFACT_TYPES, PAYLOAD_FILES
-from quantumverse.uris import QvUriError, VersionError, parse_uri, resolve_version
+from quantumverse.uris import (
+    QvUriError,
+    VersionError,
+    is_hexid,
+    is_semver,
+    parse_uri,
+    resolve_version,
+)
 
 from .store import Conflict, NotFound, Store, StoreError
-
-_SEMVER_RE = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
-    r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
-    r"(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-)
-_HEXID_RE = re.compile(r"^[0-9a-f]{6,64}$")
 
 
 class FileEntry(BaseModel):
@@ -104,11 +103,9 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
 
     @app.exception_handler(NotFound)
     async def _not_found(_req: Request, exc: NotFound):
-        return Response(
-            content=f'{{"detail": {exc.args[0]!r}}}'.replace("'", '"'),
-            status_code=404,
-            media_type="application/json",
-        )
+        # Proper JSON encoding — a hand-built f-string breaks when the message
+        # contains a quote (and NotFound messages use !r, so they routinely do).
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -148,7 +145,7 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
     @app.post("/api/v1/artifacts/{namespace}/{name}/versions", status_code=201)
     def publish_version(namespace: str, name: str, body: PublishVersion) -> dict:
         _check_ref(namespace, name)
-        if not _SEMVER_RE.match(body.version):
+        if not is_semver(body.version):
             raise HTTPException(400, f"{body.version!r} is not a semantic version (RFC-0003)")
         try:
             record = store.get_artifact(namespace, name)
@@ -226,13 +223,13 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
         if errors:
             raise HTTPException(422, {"detail": "capsule is invalid", "errors": errors})
         manifest = capsule.manifest
-        level, trust_detail = trust_level(files, capsule.id)
-        store.put_capsule(capsule.id, files, title=manifest.get("title", ""), trust=level)
+        # put_capsule merges signatures and returns the authoritative trust level.
+        level = store.put_capsule(capsule.id, files, title=manifest.get("title", ""))
         return {
             "id": capsule.id,
             "short_id": capsule.short_id,
             "trust": level,
-            "trust_detail": trust_detail,
+            "trust_detail": trust_level(capsule.files, capsule.id)[1],
             "warnings": [str(f) for f in findings if f.severity == "warning"],
         }
 
@@ -245,7 +242,7 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
         hexid = hexid.lower()
         if hexid.startswith("sha256:"):
             hexid = hexid.split(":", 1)[1]
-        if not _HEXID_RE.match(hexid):
+        if not is_hexid(hexid):
             raise HTTPException(400, f"malformed capsule id {hexid!r} (want 6-64 hex chars)")
         try:
             return store.get_capsule(hexid)

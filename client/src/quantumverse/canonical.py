@@ -8,11 +8,22 @@ Digests are always lowercase-hex SHA-256 with a ``sha256:`` prefix.
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 from typing import Any
 
 import rfc8785
 
 DIGEST_PREFIX = "sha256:"
+
+
+def utc_now() -> str:
+    """Current UTC time in the platform's canonical timestamp format.
+
+    This one format is embedded in signed manifests, signatures, certificates,
+    and string-sorted calibration timelines — it must be identical everywhere,
+    so every component imports this rather than re-deriving the strftime call.
+    """
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def canonical_bytes(obj: Any) -> bytes:

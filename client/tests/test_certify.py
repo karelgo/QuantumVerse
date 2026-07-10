@@ -45,7 +45,7 @@ def _suite_capsules(n=3, shots=4096, seed=7, counts_override=None):
 
 
 def test_suite_circuits_parse_and_have_right_ideals():
-    for n in (2, 3, 5):
+    for n in (3, 4, 5):
         for name, qasm_text in suite_circuits(n).items():
             circuit = parse_qasm(qasm_text)
             width = 2 if name == "bell" else n

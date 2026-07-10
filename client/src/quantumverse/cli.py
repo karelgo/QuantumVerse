@@ -67,10 +67,7 @@ def _cmd_capsule_create(args: argparse.Namespace) -> int:
         environment_lock=_read_text(args.env_lock) if args.env_lock else None,
     )
     out = args.output or f"capsule-{capsule.short_id}.tar"
-    if str(out).endswith(".tar"):
-        capsule.write_tar(out)
-    else:
-        capsule.write_dir(out)
+    capsule.write(out)
     print(f"capsule/{capsule.short_id}  {capsule.id}")
     print(f"wrote {out}")
     return 0
@@ -113,10 +110,7 @@ def _cmd_capsule_sign(args: argparse.Namespace) -> int:
         capsule.files, capsule.id, key_name=args.key, signer=args.signer
     )
     out = Path(args.output) if args.output else Path(args.path)
-    if out.is_dir() or (not out.exists() and not str(out).endswith(".tar")):
-        capsule.write_dir(out)
-    else:
-        capsule.write_tar(out)
+    capsule.write(out)
     level, description = trust_level(capsule.files, capsule.id)
     print(f"signed capsule/{capsule.short_id} — {description}")
     print(f"wrote {out}")
@@ -147,12 +141,8 @@ def _cmd_capsule_replay(args: argparse.Namespace) -> int:
     report = replay_l1(capsule, seed=args.seed)
     print(report.summary())
     if args.output:
-        out = args.output
-        if str(out).endswith(".tar"):
-            report.replay.write_tar(out)
-        else:
-            report.replay.write_dir(out)
-        print(f"wrote {out}")
+        report.replay.write(args.output)
+        print(f"wrote {args.output}")
     return 0 if report.verdict in ("consistent", "degraded") else 1
 
 

@@ -233,6 +233,35 @@ def test_capsule_lookup_errors(client):
     assert client.get("/api/v1/capsules/abcdef").status_code == 404
 
 
+def test_repush_cannot_strip_signature(client, tmp_path, monkeypatch):
+    from quantumverse.signing import generate_keypair, sign_files
+
+    monkeypatch.setenv("QV_HOME", str(tmp_path / "qvhome"))
+    generate_keypair("default")
+    capsule = _bell_capsule()
+    signed = Capsule(sign_files(capsule.files, capsule.id))
+
+    first = client.post("/api/v1/capsules", json=_capsule_payload(signed))
+    assert first.status_code == 201
+    assert first.json()["trust"] == 1
+
+    # adversary re-pushes the same capsule id WITHOUT author.sig
+    stripped = Capsule({k: v for k, v in signed.files.items() if k != "author.sig"})
+    second = client.post("/api/v1/capsules", json=_capsule_payload(stripped))
+    assert second.status_code == 201
+    # the endorsement is not dropped and trust is not downgraded
+    assert second.json()["trust"] == 1
+    assert client.get(f"/api/v1/capsules/{capsule.id.split(':')[1][:8]}").json()["trust"] == 1
+
+
+def test_not_found_detail_survives_quotes(client):
+    # a prefix that matches nothing yields a message containing quotes via !r;
+    # the JSON body must still parse (regression for the hand-built handler).
+    resp = client.get("/api/v1/devices/no/body")
+    assert resp.status_code == 404
+    assert isinstance(resp.json()["detail"], str)
+
+
 def test_signed_capsule_reports_trust_level(client, tmp_path, monkeypatch):
     from quantumverse.signing import generate_keypair, sign_files
 

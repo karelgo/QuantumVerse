@@ -17,9 +17,9 @@ from typing import Optional, Union
 
 import httpx
 
-from .canonical import digest_bytes, is_digest
+from .canonical import digest_bytes, is_digest, utc_now
 from .devices import calibration_summary, validate_record
-from .uris import resolve_version
+from .uris import is_semver as _SEMVER_MATCH, resolve_version
 
 __all__ = ["RegistryError", "LocalRegistry", "RemoteRegistry", "get_registry"]
 
@@ -125,6 +125,11 @@ class LocalRegistry:
         files: dict[str, bytes],
         card_fields: Optional[dict] = None,
     ) -> dict:
+        if not _SEMVER_MATCH(version):
+            raise RegistryError(
+                f"{version!r} is not a semantic version (RFC-0003) — "
+                "e.g. 1.0.0; the artifact would otherwise be unresolvable"
+            )
         index = self._load_index()
         key = f"{namespace}/{name}"
         record = index["artifacts"].get(key)
@@ -205,21 +210,32 @@ class LocalRegistry:
     # -- capsules ---------------------------------------------------------------------
 
     def push_capsule(self, files: dict[str, bytes]) -> str:
-        if "manifest.json" not in files:
-            raise RegistryError("capsule upload requires manifest.json")
-        try:
-            manifest = json.loads(files["manifest.json"].decode("utf-8"))
-            capsule_id = manifest["id"]
-        except Exception as exc:
-            raise RegistryError(f"capsule manifest.json is unreadable: {exc}") from exc
-        if not is_digest(capsule_id):
-            raise RegistryError(f"capsule manifest has malformed id {capsule_id!r}")
+        # Full RFC-0001 validation, exactly as the server does — the local
+        # registry must not accept capsules an HTTP registry would reject, or
+        # the "computed, not claimed" guarantee stops holding for local
+        # certificates and leaderboards built on these capsules.
+        from .capsule import Capsule
+
+        capsule = Capsule(files)
+        errors = [f for f in capsule.validate() if f.severity == "error"]
+        if errors:
+            raise RegistryError(
+                "capsule is invalid:\n  " + "\n  ".join(str(f) for f in errors)
+            )
+        capsule_id = capsule.id
         index = self._load_index()
         hexid = capsule_id.split(":", 1)[1]
+        # Signatures are additive endorsements: merge, never strip (RFC-0001).
+        merged = dict(files)
+        existing = index["capsules"].get(hexid)
+        if existing is not None:
+            for sig in ("author.sig", "receipt.sig"):
+                if sig not in merged and sig in existing["files"]:
+                    merged[sig] = self.get_blob(existing["files"][sig])
         index["capsules"][hexid] = {
-            "files": {path: self.put_blob(data) for path, data in files.items()}
+            "files": {path: self.put_blob(data) for path, data in merged.items()}
         }
-        self._link_capsule_calibration(index, capsule_id, files)
+        self._link_capsule_calibration(index, capsule_id, merged)
         self._save_index(index)
         return capsule_id
 
@@ -252,7 +268,28 @@ class LocalRegistry:
             )
             return
 
+    @staticmethod
+    def normalize_capsule_ref(ref: str) -> str:
+        """Strip qv:/sha256:/capsule/ decorations to a bare hex id prefix."""
+        ref = ref.strip()
+        if ref.startswith("qv:"):
+            ref = ref[3:]
+        if ref.startswith("capsule/"):
+            ref = ref[len("capsule/"):]
+        if ref.startswith("sha256:"):
+            ref = ref[len("sha256:"):]
+        return ref
+
+    def capsule_files(self, ref: str) -> tuple[str, dict[str, bytes]]:
+        """Resolve a capsule ref to (id, {path: bytes}) — fetches every blob."""
+        record = self.get_capsule(ref)
+        files = {path: self.get_blob(digest) for path, digest in record["files"].items()}
+        return record["id"], files
+
     def get_capsule(self, hexid: str) -> dict:
+        hexid = self.normalize_capsule_ref(hexid)
+        if not hexid or any(c not in "0123456789abcdef" for c in hexid):
+            raise RegistryError(f"malformed capsule id prefix {hexid!r} (want lowercase hex)")
         index = self._load_index()
         matches = [h for h in index["capsules"] if h.startswith(hexid)]
         if not matches:
@@ -334,14 +371,7 @@ class LocalRegistry:
 
         index = self._load_index()
         entry = self._device_entry(index, namespace, name)
-        capsules = []
-        for ref in capsule_ids:
-            hexid = ref.split(":", 1)[1] if ref.startswith("sha256:") else ref
-            record = self.get_capsule(hexid)
-            files = {
-                path: self.get_blob(digest) for path, digest in record["files"].items()
-            }
-            capsules.append((record["id"], files))
+        capsules = [self.capsule_files(ref) for ref in capsule_ids]
         certificate = evaluate_capsule_files(
             capsules, expected_backend=entry["record"]["backend"]
         )
@@ -416,31 +446,27 @@ class LocalRegistry:
         definition = record["definition"]
         instance = self._resolve_instance(definition["instance"])
 
-        hexid = capsule_ref.split(":", 1)[1] if capsule_ref.startswith("sha256:") else capsule_ref
-        capsule_record = self.get_capsule(hexid)
-        files = {
-            path: self.get_blob(digest) for path, digest in capsule_record["files"].items()
-        }
-        entry = score_capsule_files(definition, instance, capsule_record["id"], files)
+        capsule_id, files = self.capsule_files(capsule_ref)
+        entry = score_capsule_files(definition, instance, capsule_id, files)
         min_shots = definition.get("min_shots")
         if min_shots and (entry["shots"] or 0) < min_shots:
             raise LeaderboardError(
                 f"board {name!r} requires at least {min_shots} shots, capsule has {entry['shots']}"
             )
-        entry["trust"] = trust_level(files, capsule_record["id"])[0]
-        entry["submitted"] = _utc_now()
+        entry["trust"] = trust_level(files, capsule_id)[0]
+        # Preserve the original submission time on resubmission — RFC-0006 ranks
+        # ties by earlier submission, so re-scoring must not reset the clock
+        # (the HTTP registry preserves it too; the two must agree).
+        prior = next(
+            (e for e in record["entries"] if e["capsule"] == entry["capsule"]), None
+        )
+        entry["submitted"] = prior["submitted"] if prior else utc_now()
 
         entries = [e for e in record["entries"] if e["capsule"] != entry["capsule"]]
         entries.append(entry)
         record["entries"] = entries
         self._save_index(index)
         return entry
-
-
-def _utc_now() -> str:
-    from datetime import datetime, timezone
-
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class RemoteRegistry:
@@ -491,15 +517,12 @@ class RemoteRegistry:
         return data
 
     def create_artifact(self, namespace: str, name: str, type: str) -> dict:
-        try:
-            return self._request(
-                "POST", f"/api/v1/artifacts/{namespace}/{name}", json={"type": type}
-            ).json()
-        except RegistryError as exc:
-            # already-exists is not an error for idempotent pushes
-            if "409" in str(exc):
-                return self.get_artifact(namespace, name)
-            raise
+        # Same-type re-creation is already idempotent server-side (201,
+        # created:false); a 409 means a genuine TYPE conflict and propagates
+        # with the server's detail rather than being swallowed.
+        return self._request(
+            "POST", f"/api/v1/artifacts/{namespace}/{name}", json={"type": type}
+        ).json()
 
     def publish_version(
         self,
@@ -527,7 +550,8 @@ class RemoteRegistry:
             return body["results"]
         if isinstance(body, list):
             return body
-        raise RegistryError(f"unexpected search response shape: {type(body).__name__}")
+        # `type` the parameter shadows the builtin here — name the class explicitly.
+        raise RegistryError(f"unexpected search response shape: {body.__class__.__name__}")
 
     # -- capsules -------------------------------------------------------------------
 
@@ -540,7 +564,14 @@ class RemoteRegistry:
         return capsule_id
 
     def get_capsule(self, hexid: str) -> dict:
+        hexid = LocalRegistry.normalize_capsule_ref(hexid)
         return self._request("GET", f"/api/v1/capsules/{hexid}").json()
+
+    def capsule_files(self, ref: str) -> tuple[str, dict[str, bytes]]:
+        """Resolve a capsule ref to (id, {path: bytes}) — fetches every blob."""
+        record = self.get_capsule(ref)
+        files = {path: self.get_blob(digest) for path, digest in record["files"].items()}
+        return record["id"], files
 
     # -- devices (RFC-0004) -----------------------------------------------------------
 

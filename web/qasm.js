@@ -426,6 +426,10 @@ export function compile(source, opts = {}) {
   const parsed = parseQasm(source, opts.bindings ?? {});
   return {
     num_qubits: parsed.numQubits,
+    // Emit the declared classical-register width so the simulator renders
+    // bitstrings at num_clbits (matching the Python client) rather than the
+    // widest measured bit — otherwise partial measurements key differently.
+    num_clbits: parsed.numClbits || undefined,
     shots: opts.shots ?? null,
     seed: opts.seed ?? null,
     want_statevector: !!opts.wantStatevector,

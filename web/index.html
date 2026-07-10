@@ -285,23 +285,33 @@ function showCard(card) {
 }
 
 function declaredParams(source) {
-  // Same declaration grammar as qasm.js; parsing proper would raise a
-  // collective unbound-parameter error, so scan declarations instead.
+  // Parsing proper raises a collective unbound-parameter error, so scan
+  // declarations. Match qasm.js's statement model: strip comments, split on
+  // ';', and test each statement — so declarations that share a line with
+  // another statement (or carry an inline comment) are still found.
+  const stripped = source
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, ' ');
   const names = [];
-  for (const m of source.matchAll(/^\s*input\s+float(?:\s*\[\d+\])?\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/gm)) {
-    names.push(m[1]);
+  for (const stmt of stripped.split(';')) {
+    const m = stmt.match(/^\s*input\s+float(?:\s*\[\d+\])?\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/);
+    if (m) names.push(m[1]);
   }
   return names;
 }
 
 function renderParamInputs(source) {
+  // Preserve values the user has already typed across source edits — read the
+  // live boxes first, then fall back to the loaded bindings, then a default.
+  const live = collectBindings();
   paramsBox.innerHTML = '';
   for (const name of declaredParams(source)) {
     const label = document.createElement('label');
     label.textContent = `${name} = `;
     const input = document.createElement('input');
     input.type = 'number'; input.step = 'any';
-    input.value = currentBindings[name] ?? 0.5;
+    const preserved = Number.isFinite(live[name]) ? live[name] : currentBindings[name];
+    input.value = preserved ?? 0.5;
     input.dataset.param = name;
     label.appendChild(input);
     paramsBox.appendChild(label);

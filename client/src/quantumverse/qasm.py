@@ -242,6 +242,7 @@ class _Parser:
         self.num_clbits = 0
         self.declared_params: list[str] = []
         self.ops: list[Op] = []
+        self._written_clbits: set[int] = set()
         self._saw_include = False
         self._saw_body = False  # any declaration or op
 
@@ -549,8 +550,10 @@ class _Parser:
                     first.line,
                 )
             for i in range(self.num_qubits):
+                self._claim_clbit(i, first)
                 self.ops.append(Op(name="measure", qubits=[i], clbits=[i]))
         elif clbit is not None and qubit is not None:
+            self._claim_clbit(clbit, first)
             self.ops.append(Op(name="measure", qubits=[qubit], clbits=[clbit]))
         else:
             raise QasmError(
@@ -559,6 +562,14 @@ class _Parser:
                 first.line,
             )
         self._saw_body = True
+
+    def _claim_clbit(self, clbit: int, first: _Token) -> None:
+        """Reject a second write to the same classical bit (matches the JS/Rust sims)."""
+        if clbit in self._written_clbits:
+            raise QasmError(
+                f"classical bit {clbit} is written by more than one measurement", first.line
+            )
+        self._written_clbits.add(clbit)
 
     # --- expressions -----------------------------------------------------------
 

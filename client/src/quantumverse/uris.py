@@ -13,6 +13,8 @@ __all__ = [
     "parse_uri",
     "format_uri",
     "resolve_version",
+    "is_semver",
+    "is_hexid",
     "RESERVED_NAMESPACES",
 ]
 
@@ -29,6 +31,16 @@ _SEMVER_RE = re.compile(
 )
 # Prefix version specs allowed in references: "1" or "1.4".
 _PREFIX_RE = re.compile(r"^(0|[1-9]\d*)(?:\.(0|[1-9]\d*))?$")
+
+
+def is_semver(value: str) -> bool:
+    """True if *value* is a full X.Y.Z semantic version (RFC-0003)."""
+    return isinstance(value, str) and bool(_SEMVER_RE.match(value))
+
+
+def is_hexid(value: str) -> bool:
+    """True if *value* is a 6–64 char lowercase-hex capsule id prefix (RFC-0003)."""
+    return isinstance(value, str) and bool(_HEXID_RE.match(value))
 
 
 class QvUriError(ValueError):

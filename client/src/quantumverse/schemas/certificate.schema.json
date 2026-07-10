@@ -8,7 +8,7 @@
   "properties": {
     "certificate_version": { "const": "0.1" },
     "suite": { "type": "string", "pattern": "^qv-commissioning-v[0-9]+$" },
-    "width": { "type": "integer", "minimum": 2, "maximum": 12 },
+    "width": { "type": "integer", "minimum": 3, "maximum": 12 },
     "issued": { "type": "string", "format": "date-time" },
     "checks": {
       "type": "array",

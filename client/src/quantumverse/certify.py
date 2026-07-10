@@ -10,9 +10,9 @@ independently. Shared between client and server, like ``devices.py``.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from typing import Optional
 
+from .canonical import utc_now
 from .qasm import parse_qasm
 from .verify import total_variation
 
@@ -31,7 +31,9 @@ __all__ = [
 ]
 
 SUITE = "qv-commissioning-v0"
-MIN_QUBITS = 2
+# The suite width must be >= 3: at width 2 the GHZ check is textually identical
+# to the Bell check, so the four checks are only distinct from 3 qubits up.
+MIN_QUBITS = 3
 MAX_QUBITS = 12  # suite circuits stay simulable everywhere for cross-checking
 
 # Per-check pass thresholds on total variation distance (RFC-0005 defaults).
@@ -47,10 +49,6 @@ class CertifyError(ValueError):
     """Raised when a certificate cannot be computed."""
 
 
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def check_names() -> list[str]:
     return list(_THRESHOLDS)
 
@@ -64,7 +62,9 @@ def threshold(name: str) -> float:
 
 def check_circuit(name: str, n: int) -> str:
     """OpenQASM 3 source of one suite check at width *n* (deterministic text)."""
-    if not MIN_QUBITS <= n <= MAX_QUBITS:
+    # The bell check is intrinsically 2 qubits and bypasses the suite-width
+    # range; the scaling checks (readout/ghz) must be within [MIN, MAX].
+    if name != "bell" and not MIN_QUBITS <= n <= MAX_QUBITS:
         raise CertifyError(
             f"suite width must be {MIN_QUBITS}..{MAX_QUBITS} qubits, got {n}"
         )
@@ -216,7 +216,7 @@ def evaluate_capsule_files(
         "certificate_version": "0.1",
         "suite": SUITE,
         "width": width,
-        "issued": _utc_now(),
+        "issued": utc_now(),
         "checks": checks,
         "passed": all(c["pass"] for c in checks),
     }

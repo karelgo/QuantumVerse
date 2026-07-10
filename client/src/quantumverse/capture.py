@@ -24,9 +24,9 @@ and publish it in the same breath.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Optional, Union
 
+from .canonical import utc_now
 from .capsule import Capsule, CapsuleError
 from .qasm import parse_qasm
 from .registry import Registry, get_registry
@@ -37,10 +37,6 @@ __all__ = ["CaptureError", "CaptureContext", "capture", "device_from_qiskit"]
 
 class CaptureError(ValueError):
     """Raised when a capture cannot produce a capsule."""
-
-
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class CaptureContext:
@@ -67,7 +63,7 @@ class CaptureContext:
     # -- context protocol -------------------------------------------------------
 
     def __enter__(self) -> "CaptureContext":
-        self._entered = _utc_now()
+        self._entered = utc_now()
         if self._device is not None and not self._device.get("captured"):
             # the snapshot represents the device state at capture entry
             self._device["captured"] = self._entered
@@ -83,7 +79,7 @@ class CaptureContext:
         """Attach the backend calibration snapshot (RFC-0001 device.json shape)."""
         self._device = dict(device)
         if not self._device.get("captured"):
-            self._device["captured"] = self._entered or _utc_now()
+            self._device["captured"] = self._entered or utc_now()
 
     def run(
         self,
@@ -93,7 +89,7 @@ class CaptureContext:
         params: Optional[dict] = None,
     ) -> Result:
         """Run on the built-in simulator and record everything automatically."""
-        submitted = _utc_now()
+        submitted = utc_now()
         circuit = parse_qasm(circuit_qasm)
         result = _simulate(circuit, shots=shots, seed=seed, param_bindings=params)
         self.snapshot_device(
@@ -116,7 +112,7 @@ class CaptureContext:
             shots=shots,
             parameters=params,
             submitted=submitted,
-            completed=_utc_now(),
+            completed=utc_now(),
         )
         return result
 
@@ -249,7 +245,7 @@ def device_from_qiskit(backend) -> dict:
                 else {}
             ),
         },
-        "captured": _utc_now(),
+        "captured": utc_now(),
         "topology": {"num_qubits": num_qubits},
         "qubits": [],
         "gates": [],

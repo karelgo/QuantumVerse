@@ -308,6 +308,34 @@ fn partial_measurement_marginalizes() {
 }
 
 #[test]
+fn num_clbits_sets_render_width() {
+    // Bell, measure only q0 into c0, but declare a 3-bit register: the Python
+    // client renders at num_clbits, so the wasm sim must too -> "000"/"001".
+    let out = run(json!({
+        "num_qubits": 2,
+        "num_clbits": 3,
+        "ops": [
+            {"g":"h","q":[0]}, {"g":"cx","q":[0,1]},
+            {"g":"measure","q":[0],"c":[0]}
+        ]
+    }));
+    let probs = out["probabilities"].as_object().unwrap();
+    assert_eq!(probs.len(), 2);
+    assert!((probs["000"].as_f64().unwrap() - 0.5).abs() < TOL);
+    assert!((probs["001"].as_f64().unwrap() - 0.5).abs() < TOL);
+}
+
+#[test]
+fn num_clbits_narrower_than_measured_bit_errors() {
+    let out = run(json!({
+        "num_qubits": 2,
+        "num_clbits": 1,
+        "ops": [{"g":"measure","q":[0],"c":[0]}, {"g":"measure","q":[1],"c":[1]}]
+    }));
+    assert!(out["error"].as_str().unwrap().contains("narrower"));
+}
+
+#[test]
 fn measurement_maps_qubits_to_clbits() {
     // Bell; q0 -> c0, q1 -> c2. Width 3, bit 1 always 0: "000" / "101".
     let out = run(json!({

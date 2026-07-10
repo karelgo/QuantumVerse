@@ -14,12 +14,11 @@ import json
 import platform
 import tarfile
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Union
 
 from ._schema import schema_errors
-from .canonical import canonical_bytes, digest_bytes, digest_json
+from .canonical import canonical_bytes, digest_bytes, digest_json, utc_now
 from .qasm import QasmError, parse_qasm
 
 __all__ = ["CapsuleError", "Finding", "Capsule", "FILE_ORDER"]
@@ -79,10 +78,6 @@ def _normalize_text(text: str) -> str:
     if text and not text.endswith("\n"):
         text += "\n"
     return text
-
-
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class Capsule:
@@ -198,7 +193,7 @@ class Capsule:
         manifest: dict = {
             "capsule_version": "0.1",
             "id": "",
-            "created": _utc_now(),
+            "created": utc_now(),
             "title": title,
             "authors": norm_authors,
             "license": license,
@@ -528,7 +523,7 @@ class Capsule:
             0: "execution record",
             1: "author-signed execution record",
             2: "provider-verified execution record",
-        }[level]
+        }.get(level, "execution record")
         lines = [
             f"@misc{{qv_{short},",
             f"  title        = {{{manifest.get('title', '?')}}},",
@@ -556,6 +551,18 @@ class Capsule:
         return doc if isinstance(doc, dict) else None
 
     # -- writing ---------------------------------------------------------------------
+
+    def write(self, path: Union[str, Path]) -> Path:
+        """Write to *path*, choosing tar vs directory the way ``load`` reads it.
+
+        A ``.tar`` suffix (or an existing file) writes a tar archive; anything
+        else writes a directory. This is the single dispatch every CLI verb
+        that emits a capsule should call, so they stay consistent.
+        """
+        path = Path(path)
+        if str(path).endswith(".tar") or path.is_file():
+            return self.write_tar(path)
+        return self.write_dir(path)
 
     def _ordered_names(self) -> list[str]:
         ordered = [n for n in FILE_ORDER if n in self.files]

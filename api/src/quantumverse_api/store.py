@@ -13,7 +13,7 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from quantumverse.canonical import digest_bytes, is_digest
+from quantumverse.canonical import digest_bytes, is_digest, utc_now
 from quantumverse.devices import calibration_summary
 
 _SCHEMA = """
@@ -80,14 +80,9 @@ CREATE TABLE IF NOT EXISTS board_entries (
 """
 
 
-# calibration_summary is shared with the client (quantumverse.devices) so
-# timelines are derived identically everywhere.
-
-
-def _utc_now() -> str:
-    from datetime import datetime, timezone
-
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+# calibration_summary is shared with the client (quantumverse.devices) and
+# utc_now with quantumverse.canonical, so timelines and timestamps are derived
+# identically everywhere.
 
 
 class StoreError(ValueError):
@@ -277,18 +272,43 @@ class Store:
 
     # -- capsules ---------------------------------------------------------------
 
-    def put_capsule(
-        self, capsule_id: str, files: dict[str, bytes], title: str, trust: int = 0
-    ) -> str:
+    def put_capsule(self, capsule_id: str, files: dict[str, bytes], title: str) -> int:
+        """Store a capsule and return its computed trust level.
+
+        Signatures are additive endorsements (RFC-0001: they are excluded from
+        the capsule id). A re-push of an existing capsule therefore MERGES
+        signature files rather than replacing the row — it can add an
+        endorsement but never strip one, and trust never decreases. The
+        created timestamp is preserved. Trust is recomputed here from the final
+        merged files, so the stored value is authoritative.
+        """
+        from quantumverse.signing import trust_level
+
         hexid = capsule_id.split(":", 1)[1]
-        file_digests = {path: self.put_blob(data) for path, data in files.items()}
         with self._lock, self._connect() as conn:
-            conn.execute(
-                "INSERT OR REPLACE INTO capsules (hexid, files, title, trust) VALUES (?, ?, ?, ?)",
-                (hexid, json.dumps(file_digests, sort_keys=True), title, trust),
-            )
-        self._link_capsule_calibration(capsule_id, files)
-        return capsule_id
+            existing = conn.execute(
+                "SELECT files FROM capsules WHERE hexid=?", (hexid,)
+            ).fetchone()
+            merged = dict(files)
+            if existing is not None:
+                existing_map = json.loads(existing["files"])
+                for sig in ("author.sig", "receipt.sig"):
+                    if sig not in merged and sig in existing_map:
+                        merged[sig] = self.get_blob(existing_map[sig])
+            trust = trust_level(merged, capsule_id)[0]
+            file_digests = {path: self.put_blob(data) for path, data in merged.items()}
+            if existing is None:
+                conn.execute(
+                    "INSERT INTO capsules (hexid, files, title, trust) VALUES (?, ?, ?, ?)",
+                    (hexid, json.dumps(file_digests, sort_keys=True), title, trust),
+                )
+            else:
+                conn.execute(
+                    "UPDATE capsules SET files=?, trust=? WHERE hexid=?",
+                    (json.dumps(file_digests, sort_keys=True), trust, hexid),
+                )
+        self._link_capsule_calibration(capsule_id, merged)
+        return trust
 
     def _link_capsule_calibration(self, capsule_id: str, files: dict[str, bytes]) -> None:
         """RFC-0004 rule 1: a capsule whose device.json backend identity matches
@@ -330,6 +350,10 @@ class Store:
             )
 
     def get_capsule(self, hexid_prefix: str) -> dict:
+        # The prefix goes into a LIKE pattern; reject anything that is not plain
+        # lowercase hex so '%'/'_' can't act as wildcards (capsule ids are hex).
+        if not hexid_prefix or any(c not in "0123456789abcdef" for c in hexid_prefix):
+            raise NotFound(f"no capsule with id prefix {hexid_prefix!r}")
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT hexid, files, title, created, trust FROM capsules WHERE hexid LIKE ?",
@@ -625,7 +649,7 @@ class Store:
                 "SELECT submitted FROM board_entries WHERE board=? AND capsule=?",
                 (name, entry["capsule"]),
             ).fetchone()
-            submitted = existing["submitted"] if existing else _utc_now()
+            submitted = existing["submitted"] if existing else utc_now()
             entry["submitted"] = submitted
             conn.execute(
                 "INSERT OR REPLACE INTO board_entries (board, capsule, entry, submitted)"

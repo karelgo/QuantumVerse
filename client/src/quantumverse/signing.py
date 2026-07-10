@@ -15,7 +15,6 @@ import base64
 import json
 import os
 import stat
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -26,7 +25,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from ._schema import schema_errors
-from .canonical import canonical_bytes, digest_bytes
+from .canonical import canonical_bytes, digest_bytes, utc_now
 
 __all__ = [
     "SigningError",
@@ -61,10 +60,6 @@ def _b64(data: bytes) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def generate_keypair(name: str = "default", home: Optional[str] = None) -> dict:
     """Generate and store an Ed25519 keypair; returns its public info."""
     path = _key_path(name, home)
@@ -75,7 +70,7 @@ def generate_keypair(name: str = "default", home: Optional[str] = None) -> dict:
     record = {
         "algorithm": "ed25519",
         "name": name,
-        "created": _utc_now(),
+        "created": utc_now(),
         "private_key": _b64(private.private_bytes_raw()),
         "public_key": _b64(public_raw),
         "key_id": digest_bytes(public_raw),
@@ -116,7 +111,7 @@ def make_signature(
         "key_id": record["key_id"],
         "public_key": record["public_key"],
         "signature": _b64(private.sign(capsule_id.encode("ascii"))),
-        "signed": _utc_now(),
+        "signed": utc_now(),
     }
     if signer:
         doc["signer"] = signer

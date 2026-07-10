@@ -86,11 +86,9 @@ def diff_circuits(qasm_a: str, qasm_b: str, params: Optional[dict] = None) -> di
 
 
 def _capsule_from_registry(capsule_ref: str) -> Capsule:
-    hexid = capsule_ref.split(":", 1)[1] if capsule_ref.startswith("sha256:") else capsule_ref
-    hexid = hexid.removeprefix("capsule/")
-    registry = get_registry()
-    record = registry.get_capsule(hexid)
-    files = {name: registry.get_blob(digest) for name, digest in record["files"].items()}
+    # Accepts qv:capsule/<id>, capsule/<id>, sha256:<id>, or a bare hex prefix —
+    # normalization lives on the registry so every entry point agrees.
+    _id, files = get_registry().capsule_files(capsule_ref)
     return Capsule(files)
 
 

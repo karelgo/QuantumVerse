@@ -42,6 +42,8 @@ struct OpIn {
 struct ProgramIn {
     num_qubits: usize,
     #[serde(default)]
+    num_clbits: Option<usize>,
+    #[serde(default)]
     shots: Option<u64>,
     #[serde(default)]
     seed: Option<u64>,
@@ -320,7 +322,26 @@ fn run_inner(input: &str) -> Result<String, String> {
             measures.push((q, q));
         }
     }
-    let width = measures.iter().map(|&(_, c)| c + 1).max().unwrap_or(1);
+    // Render at the declared classical-register width when the program supplies
+    // it (matching the Python simulator, which uses num_clbits); otherwise fall
+    // back to the widest clbit touched. This keeps bitstring keys identical
+    // across the two implementations for partial measurements into a wider reg.
+    let min_width = measures.iter().map(|&(_, c)| c + 1).max().unwrap_or(1);
+    let width = match prog.num_clbits {
+        Some(w) if w > MAX_CLBITS => {
+            return Err(format!(
+                "num_clbits {w} exceeds the maximum of {MAX_CLBITS}"
+            ))
+        }
+        Some(w) if w < min_width => {
+            return Err(format!(
+                "num_clbits {w} is narrower than the highest measured bit ({})",
+                min_width - 1
+            ))
+        }
+        Some(w) => w,
+        None => min_width,
+    };
 
     // Marginal distribution over the classical register.
     let mdim = 1usize << width;

@@ -21,7 +21,7 @@ The **birth certificate** is a standardized, capsule-backed commissioning record
 
 ## Suite `qv-commissioning-v0`
 
-Four checks at a declared width *n* (2 ≤ n ≤ 12 in v0 — kept simulable everywhere so results can always be cross-checked):
+Four checks at a declared width *n* (3 ≤ n ≤ 12 in v0 — the lower bound is 3 because at width 2 the GHZ check collapses onto the Bell check; the upper bound keeps every check simulable so results can always be cross-checked):
 
 | Check | Circuit | Ideal distribution | Default max TV |
 |---|---|---|---|
