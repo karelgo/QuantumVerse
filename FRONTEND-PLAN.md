@@ -2,7 +2,7 @@
 
 *The web frontend of QuantumVerse — the `web/` box in the [implementation plan's architecture](IMPLEMENTATION-PLAN.md#system-architecture), specified. What we build, what it looks like, and the bar it has to clear.*
 
-> **Status:** the first implementation lives in [`web/`](web/README.md) — Phase 0 plus the Phase 1/2 core surfaces (artifact pages, search, profiles, Run panel, embeds, capsule pages with live integrity verification and L1 replay). OG images, WASM sim, and leaderboards remain open.
+> **Status:** the first implementation lives in [`web/`](web/README.md) — Phase 0 plus the Phase 1/2 core surfaces (artifact pages, search, profiles, Run panel with statevector/Bloch views, auto-sizing embeds, OG share cards, capsule pages with live integrity verification and L1 replay overlaid on the recorded counts). The Rust→WASM sim and leaderboards remain open. One deviation: a single disciplined global stylesheet instead of CSS Modules — closer to the pitch-site ethos in practice.
 
 The pitch site ([`docs/index.html`](docs/index.html)) already proved the identity: editorial serif headlines, one brass accent, chip-dark code, hand-drawn SVG diagrams, zero framework chrome. The product frontend inherits that identity and applies it to real artifacts. The organizing idea:
 

@@ -21,6 +21,11 @@ The runnable surface is the Next.js app in `web/` (plus its JSON API). Everythin
 4. **API contract**: `curl localhost:3000/api/v1/artifacts?q=…`, `/api/v1/artifacts/{owner}/{name}`, `/api/v1/capsules/7b49ce` — detail must include computed `resources` and `integrity`; unknowns → 404 JSON.
 5. **No-JS readability**: `curl` any artifact page and grep for `role="img" aria-label="Quantum circuit` — the SVG must be in server HTML.
 6. **Both themes + mobile**: resize to mobile and check `document.documentElement.scrollWidth <= clientWidth` (no horizontal page scroll — circuits scroll inside `.circuit-scroll` only).
+7. **OG cards**: `curl -o /dev/null -w "%{content_type}" localhost:3000/quantumverse/grover-3/opengraph-image-*` → image/png (route hash suffix: grep the page HTML for `og:image`). Description glyphs are sanitized (no ⟩/≈ tofu).
+8. **Replay overlay**: on a capsule page, Replay → Counts tab shows filled bars (replay) with dashed outline bars (recorded) + legend. Mitigated tab on the execution histogram overlays raw the same way.
+9. **Bloch physics**: GHZ → every qubit reads x=y=z=0, |r|=0. Grover-3 statevector: |101⟩ amp ≈ 0.9723 (94.5%).
+10. **Embed handshake**: append an iframe pointing at `/embed/quantumverse/bell-state` and await a `qv:embed-height` postMessage.
+11. **Keyboard**: `r` runs the visible circuit; `/` focuses search; a Skip-to-content link is first in tab order.
 
 ## Gotchas
 
