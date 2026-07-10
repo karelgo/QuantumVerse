@@ -8,6 +8,23 @@ QuantumVerse is the missing layer: an open, community-owned platform for publish
 
 📖 **Read the full vision:** [VISION.md](VISION.md) · 🔭 **What's beyond the pillars:** [FRONTIERS.md](FRONTIERS.md) · 🔩 **Where the machines live:** [HARDWARE.md](HARDWARE.md) · 📐 **First spec:** [RFC-0001](rfcs/rfc-0001-experiment-capsule.md) · 🌐 **Pitch site:** [`docs/index.html`](docs/index.html) (live via GitHub Pages)
 
+**And it runs.** The reference implementation lives in this repository — client, registry, simulator, playground, seed library — built phase by phase against [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md):
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e client -e api
+
+qv-registry --data ./data --web ./web --port 8000 &   # registry + playground at :8000
+python seeds/import.py --registry http://127.0.0.1:8000 --with-capsule
+
+export QV_REGISTRY_URL=http://127.0.0.1:8000
+qv pull qv:seeds/vqe-h2-ansatz          # one line to use anyone's work
+qv run seeds/circuits/grover-2q.qasm --shots 1024
+qv diff old.qasm new.qasm               # semantic diff: equivalence up to global phase
+qv ci --config quantumverse.ci.json     # quantum CI: budgets + golden refs + distributions
+qv capsule create --circuit … && qv capsule replay …   # RFC-0001 capsules, L1 replay
+```
+
 ---
 
 ## The three pillars
@@ -63,7 +80,14 @@ And the machines themselves become citizens, not just backends: a **Device Regis
 | [`FRONTEND-PLAN.md`](FRONTEND-PLAN.md) | The web frontend — design system, page inventory, quality bar |
 | [`web/`](web/README.md) | The frontend itself — Next.js app: artifact pages, in-browser simulator, capsule verification |
 | [`COMPETITIVE-LANDSCAPE.md`](COMPETITIVE-LANDSCAPE.md) | Honest map of adjacent projects and where the whitespace is |
-| [`rfcs/`](rfcs/) | Open specifications, developed by public RFC |
+| [`rfcs/`](rfcs/) | Open specifications, developed by public RFC (0001 Capsule · 0002 Card · 0003 addressing) |
+| [`spec/`](spec/) | Machine-readable JSON Schemas backing the RFCs |
+| [`client/`](client/) | `quantumverse` Python package + `qv` CLI — capsules, cards, simulator, diff, CI, push/pull |
+| [`api/`](api/) | `qv-registry` — the reference registry server (FastAPI, SQLite, content-addressed blobs) |
+| [`sim/`](sim/) | Rust statevector simulator, built natively and to WASM (no wasm-bindgen) |
+| [`web/`](web/) | The in-browser playground — runs any registry circuit via the WASM simulator |
+| [`seeds/`](seeds/) | Starter library: 9 circuits, 2 instances, 2 **converged** trained-parameters artifacts |
+| [`quantumverse.ci.json`](quantumverse.ci.json) | This repo's own Quantum CI config (dogfooded in GitHub Actions) |
 | [`docs/`](docs/index.html) | The self-contained pitch site (served via GitHub Pages) |
 | [`docs/blog/`](docs/blog/how-a-quantum-job-travels.html) | Explainers — *How a Quantum Job Travels* (user → qubit → user, end to end) |
 

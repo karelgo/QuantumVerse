@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantumverse-api"
+version = "0.1.0"
+description = "QuantumVerse registry server — artifacts, capsules, blobs (RFC-0001/0002/0003 reference registry)"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "quantumverse",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+qv-registry = "quantumverse_api.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,14 @@
+{
+  "parameters_version": "0.1",
+  "ansatz": "qv:seeds/qaoa-maxcut-triangle@1.0.0",
+  "instance": "qv:instances/maxcut-triangle@1.0.0",
+  "parameters": { "gamma": 1.8785555922, "beta": 1.2630370614 },
+  "objective": {
+    "name": "expected_cut",
+    "value": 1.9999999940,
+    "optimum": 2,
+    "approximation_ratio": 0.999999997
+  },
+  "method": "Grid search (181x91 over [0,pi]x[0,pi/2]) with two local refinement passes, evaluating the exact statevector cut expectation on the qv reference simulator.",
+  "note": "K3 is a known special case where depth p=1 QAOA reaches the exact maximum cut."
+}

@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuantumVerse Playground</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E%E2%9A%9B%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="./tokens.css">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.5; }
+  a { color: var(--accent); }
+  header { border-bottom: 1px solid var(--line); padding: 14px clamp(16px, 4vw, 40px); display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .ket { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+  .name { font-family: var(--serif); font-weight: 600; font-size: 1.1rem; }
+  .sub { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+  header .spacer { flex: 1; }
+  main { display: grid; grid-template-columns: 240px 1fr 1fr; gap: 0; min-height: calc(100vh - 54px); }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  .panel { padding: 18px clamp(14px, 2vw, 26px); border-right: 1px solid var(--line); min-width: 0; }
+  .panel:last-child { border-right: none; }
+  .panel h2 { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; font-weight: 600; }
+
+  /* library */
+  #library { display: flex; flex-direction: column; gap: 4px; }
+  #library button { text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 7px 10px; font-family: var(--mono); font-size: .78rem; color: var(--ink); cursor: pointer; }
+  #library button:hover { background: var(--surface); border-color: var(--line); }
+  #library button.active { background: var(--surface); border-color: var(--accent); }
+  #library .lib-type { color: var(--muted); font-size: .66rem; display: block; }
+  #libnote { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-top: 10px; }
+
+  /* editor */
+  #editor { width: 100%; min-height: 320px; background: var(--code-bg); color: var(--code-ink); font-family: var(--mono); font-size: .82rem; border: 1px solid var(--line); border-radius: 10px; padding: 12px; resize: vertical; }
+  .controls { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+  .controls label { font-family: var(--mono); font-size: .7rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .controls input[type=number] { width: 90px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: .78rem; }
+  #params { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  #params label { font-family: var(--mono); font-size: .72rem; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+  #params input { width: 130px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: .78rem; }
+  .btn { background: var(--accent-fill); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-family: var(--mono); font-size: .8rem; cursor: pointer; font-weight: 600; }
+  .btn:hover { filter: brightness(1.07); }
+  #status { font-family: var(--mono); font-size: .72rem; color: var(--muted); margin-top: 10px; min-height: 1.1em; white-space: pre-wrap; }
+  #status.error { color: #C0392B; }
+  .card-box { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+  .card-box b { color: var(--ink); font-weight: 600; }
+
+  /* results */
+  .bars { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; }
+  .bar-row { display: grid; grid-template-columns: minmax(60px, auto) 1fr 74px; gap: 10px; align-items: center; font-family: var(--mono); font-size: .76rem; }
+  .bar-track { background: var(--surface-2); border-radius: 5px; height: 16px; overflow: hidden; }
+  .bar-fill { background: var(--accent-fill); height: 100%; border-radius: 5px; transition: width .25s ease; }
+  .bar-val { color: var(--muted); text-align: right; }
+  #ampsWrap { margin-top: 18px; }
+  #amps .bar-fill { background: var(--good); }
+  .empty { font-family: var(--mono); font-size: .74rem; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <span><span class="ket">|qv⟩</span> <span class="name">QuantumVerse</span></span>
+  <span class="sub">playground — every circuit runs in your browser (Rust→WASM statevector, ≤24 qubits)</span>
+  <span class="spacer"></span>
+  <a class="sub" href="https://github.com/karelgo/QuantumVerse">GitHub ↗</a>
+</header>
+<main>
+  <section class="panel">
+    <h2>Library</h2>
+    <div id="library"></div>
+    <div id="libnote"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Circuit — OpenQASM 3</h2>
+    <textarea id="editor" spellcheck="false"></textarea>
+    <div id="params"></div>
+    <div class="controls">
+      <button class="btn" id="run">Run</button>
+      <label>shots <input type="number" id="shots" value="1024" min="1" max="1000000"></label>
+      <label>seed <input type="number" id="seed" value="42"></label>
+    </div>
+    <div id="status"></div>
+    <div class="card-box" id="card" hidden></div>
+  </section>
+
+  <section class="panel">
+    <h2>Measurement distribution</h2>
+    <div class="bars" id="hist"></div>
+    <div class="empty" id="histEmpty">Run a circuit to see outcomes.</div>
+    <div id="ampsWrap" hidden>
+      <h2>Statevector amplitudes (≤ 8 qubits)</h2>
+      <div class="bars" id="amps"></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { parseQasm, compile, QasmError } from './qasm.js';
+import { loadSim } from './sim.js';
+
+const $ = (id) => document.getElementById(id);
+const editor = $('editor'), status = $('status'), paramsBox = $('params');
+
+// -- built-in examples (used when no registry is reachable) -------------------
+const EXAMPLES = [
+  { name: 'bell', type: 'circuit', bindings: {}, src: `OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+bit[2] c;
+h q[0];
+cx q[0], q[1];
+c = measure q;
+` },
+  { name: 'ghz-3', type: 'circuit', bindings: {}, src: `OPENQASM 3.0;
+include "stdgates.inc";
+qubit[3] q;
+bit[3] c;
+h q[0];
+cx q[0], q[1];
+cx q[1], q[2];
+c = measure q;
+` },
+  { name: 'grover-2q', type: 'circuit', bindings: {}, src: `OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+bit[2] c;
+h q[0];
+h q[1];
+cz q[0], q[1];
+h q[0];
+h q[1];
+x q[0];
+x q[1];
+cz q[0], q[1];
+x q[0];
+x q[1];
+h q[0];
+h q[1];
+c = measure q;
+` },
+  { name: 'vqe-h2-ansatz', type: 'circuit', bindings: { theta: -0.2236813969 }, src: `OPENQASM 3.0;
+include "stdgates.inc";
+input float theta;
+qubit[2] q;
+x q[0];
+ry(theta) q[1];
+cx q[1], q[0];
+` },
+];
+
+// -- library: registry when available, embedded examples otherwise ------------
+let simPromise = loadSim('./qv_sim.wasm');
+let currentBindings = {};
+let ansatzParams = {};   // "ns/name" -> {param: value} from parameters artifacts
+
+async function fetchAnsatzParams() {
+  // The reuse loop, in the browser: parameters artifacts declare which ansatz
+  // they converge ("ansatz": "qv:ns/name@ver"), so loading that circuit can
+  // prefill its converged values.
+  try {
+    const resp = await fetch('./api/v1/artifacts?type=parameters');
+    if (!resp.ok) return;
+    const body = await resp.json();
+    for (const artifact of body.artifacts ?? []) {
+      const resolved = await (await fetch(
+        `./api/v1/artifacts/${artifact.namespace}/${artifact.name}/resolve?version=latest`)).json();
+      const digest = resolved.files?.['params.json'];
+      if (!digest) continue;
+      const doc = await (await fetch(`./api/v1/blobs/${digest}`)).json();
+      const ansatz = (doc.ansatz ?? '').replace(/^qv:/, '').split('@')[0];
+      if (ansatz && doc.parameters) ansatzParams[ansatz] = doc.parameters;
+    }
+  } catch { /* parameters prefill is best-effort */ }
+}
+
+async function fetchRegistryLibrary() {
+  const resp = await fetch('./api/v1/artifacts?type=circuit');
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const body = await resp.json();
+  const items = [];
+  for (const artifact of body.artifacts ?? []) {
+    const versions = artifact.versions ?? [];
+    if (!versions.length) continue;
+    items.push({
+      name: `${artifact.namespace}/${artifact.name}`,
+      type: artifact.type,
+      registry: { namespace: artifact.namespace, artifact: artifact.name },
+    });
+  }
+  if (!items.length) throw new Error('registry has no circuits');
+  return items;
+}
+
+async function loadRegistryCircuit(item) {
+  const { namespace, artifact } = item.registry;
+  const resp = await fetch(`./api/v1/artifacts/${namespace}/${artifact}/resolve?version=latest`);
+  if (!resp.ok) throw new Error(`resolve failed: HTTP ${resp.status}`);
+  const resolved = await resp.json();
+  const digest = resolved.files['circuit.qasm'];
+  const blob = await fetch(`./api/v1/blobs/${digest}`);
+  if (!blob.ok) throw new Error(`blob fetch failed: HTTP ${blob.status}`);
+  const src = await blob.text();
+  showCard(resolved.card);
+  return { src, bindings: ansatzParams[`${namespace}/${artifact}`] ?? {} };
+}
+
+function showCard(card) {
+  const box = $('card');
+  if (!card) { box.hidden = true; return; }
+  const r = card.resources ?? {};
+  const gates = Object.entries(r.gate_counts ?? {}).map(([g, n]) => `${g}:${n}`).join(' ');
+  box.innerHTML = `<b>${card.name}</b> — ${card.summary ?? ''}<br>` +
+    `qubits ${r.num_qubits} · depth ${r.depth} · 2q gates ${r.two_qubit_gate_count} · ` +
+    `T-count ${r.t_count} · ${gates}`;
+  box.hidden = false;
+}
+
+function declaredParams(source) {
+  // Same declaration grammar as qasm.js; parsing proper would raise a
+  // collective unbound-parameter error, so scan declarations instead.
+  const names = [];
+  for (const m of source.matchAll(/^\s*input\s+float(?:\s*\[\d+\])?\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/gm)) {
+    names.push(m[1]);
+  }
+  return names;
+}
+
+function renderParamInputs(source) {
+  paramsBox.innerHTML = '';
+  for (const name of declaredParams(source)) {
+    const label = document.createElement('label');
+    label.textContent = `${name} = `;
+    const input = document.createElement('input');
+    input.type = 'number'; input.step = 'any';
+    input.value = currentBindings[name] ?? 0.5;
+    input.dataset.param = name;
+    label.appendChild(input);
+    paramsBox.appendChild(label);
+  }
+}
+
+function collectBindings() {
+  const bindings = {};
+  for (const input of paramsBox.querySelectorAll('input[data-param]')) {
+    bindings[input.dataset.param] = parseFloat(input.value);
+  }
+  return bindings;
+}
+
+function renderBars(el, entries, denominator, fmt) {
+  el.innerHTML = '';
+  for (const [key, value] of entries) {
+    const row = document.createElement('div'); row.className = 'bar-row';
+    const label = document.createElement('span'); label.textContent = key;
+    const track = document.createElement('div'); track.className = 'bar-track';
+    const fill = document.createElement('div'); fill.className = 'bar-fill';
+    fill.style.width = `${Math.max(0.5, 100 * value / denominator)}%`;
+    track.appendChild(fill);
+    const val = document.createElement('span'); val.className = 'bar-val'; val.textContent = fmt(value);
+    row.append(label, track, val);
+    el.appendChild(row);
+  }
+}
+
+async function runCircuit() {
+  status.className = ''; status.textContent = 'running…';
+  try {
+    const sim = await simPromise;
+    const shots = parseInt($('shots').value, 10) || null;
+    const seedRaw = $('seed').value.trim();
+    const program = compile(editor.value, {
+      bindings: collectBindings(),
+      shots,
+      seed: seedRaw === '' ? null : parseInt(seedRaw, 10),
+      wantStatevector: true,
+    });
+    const t0 = performance.now();
+    const result = sim.run(program);
+    const ms = (performance.now() - t0).toFixed(1);
+
+    const counts = result.counts ?? null;
+    const probs = result.probabilities ?? {};
+    $('histEmpty').style.display = 'none';
+    if (counts) {
+      const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 32);
+      renderBars($('hist'), entries, shots, v => `${v}`);
+    } else {
+      const entries = Object.entries(probs).sort((a, b) => b[1] - a[1]).slice(0, 32);
+      renderBars($('hist'), entries, 1, v => v.toFixed(4));
+    }
+
+    const sv = result.statevector;
+    if (sv) {
+      const n = Math.log2(sv.length);
+      const entries = [];
+      sv.forEach(([re, im], idx) => {
+        const mag = Math.hypot(re, im);
+        if (mag > 1e-6) entries.push([`|${idx.toString(2).padStart(n, '0')}⟩`, mag]);
+      });
+      entries.sort((a, b) => b[1] - a[1]);
+      renderBars($('amps'), entries.slice(0, 32), 1, v => v.toFixed(4));
+      $('ampsWrap').hidden = false;
+    } else {
+      $('ampsWrap').hidden = true;
+    }
+    status.textContent = `ok — ${program.num_qubits} qubits, ${program.ops.length} ops, ${ms} ms in-browser`;
+  } catch (err) {
+    status.className = 'error';
+    status.textContent = (err instanceof QasmError) ? `QASM error: ${err.message}` : `error: ${err.message}`;
+  }
+}
+
+function selectLibraryButton(btn) {
+  document.querySelectorAll('#library button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function buildLibrary() {
+  const lib = $('library');
+  let items, note;
+  try {
+    items = await fetchRegistryLibrary();
+    await fetchAnsatzParams();
+    note = `${items.length} circuits from the live registry`;
+  } catch {
+    items = EXAMPLES;
+    note = 'no registry reachable — built-in examples (run qv-registry --web web/ for the live library)';
+  }
+  lib.innerHTML = '';
+  for (const item of items) {
+    const btn = document.createElement('button');
+    btn.innerHTML = `${item.name}<span class="lib-type">${item.type}</span>`;
+    btn.addEventListener('click', async () => {
+      selectLibraryButton(btn);
+      status.className = ''; status.textContent = 'loading…';
+      try {
+        const loaded = item.registry ? await loadRegistryCircuit(item)
+                                     : { src: item.src, bindings: item.bindings };
+        if (!item.registry) showCard(null);
+        currentBindings = loaded.bindings ?? {};
+        editor.value = loaded.src;
+        renderParamInputs(editor.value);
+        status.textContent = '';
+        await runCircuit();
+      } catch (err) {
+        status.className = 'error';
+        status.textContent = `error: ${err.message}`;
+      }
+    });
+    lib.appendChild(btn);
+  }
+  $('libnote').textContent = note;
+  lib.firstChild?.click();
+}
+
+$('run').addEventListener('click', runCircuit);
+editor.addEventListener('input', () => renderParamInputs(editor.value));
+buildLibrary();
+</script>
+</body>
+</html>

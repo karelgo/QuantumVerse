@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/circuit-card.schema.json",
+  "title": "Circuit Card (RFC-0002)",
+  "type": "object",
+  "required": ["card_version", "name", "summary", "resources", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "card_version": { "const": "0.1" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "description": { "type": "string" },
+    "resources": {
+      "description": "Auto-populated from the circuit on upload; hand-written values are overwritten.",
+      "type": "object",
+      "required": ["num_qubits", "depth", "gate_counts", "two_qubit_gate_count", "t_count"],
+      "additionalProperties": false,
+      "properties": {
+        "num_qubits": { "type": "integer", "minimum": 1 },
+        "depth": { "type": "integer", "minimum": 0 },
+        "gate_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 1 }
+        },
+        "two_qubit_gate_count": { "type": "integer", "minimum": 0 },
+        "t_count": { "type": "integer", "minimum": 0 },
+        "num_parameters": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "connectivity": { "type": "string" },
+        "native_gates": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "noise_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sensitivity": { "enum": ["low", "medium", "high", "unknown"] },
+        "validated_mitigation": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "verified_results": {
+      "description": "Capsule references backing per-backend outcomes.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["capsule"],
+        "additionalProperties": false,
+        "properties": {
+          "capsule": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "backend": { "type": "string" },
+          "note": { "type": "string", "maxLength": 300 }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["license"],
+      "additionalProperties": false,
+      "properties": {
+        "license": { "type": "string", "minLength": 1 },
+        "authors": { "type": "array", "items": { "type": "string" } },
+        "paper": { "type": "string" },
+        "doi": { "type": "string" },
+        "forked_from": { "type": "string", "pattern": "^qv:[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*(@[A-Za-z0-9.+-]+)?$" }
+      }
+    },
+    "tags": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }, "maxItems": 20 }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "parameters_version": "0.1",
+  "ansatz": "qv:seeds/vqe-h2-ansatz@1.0.0",
+  "instance": "qv:instances/h2-sto3g@1.0.0",
+  "parameters": { "theta": -0.2236813969 },
+  "objective": {
+    "name": "energy",
+    "units": "hartree",
+    "value": -1.8572750217,
+    "exact": -1.8572750302023797,
+    "gap": 8.51e-9
+  },
+  "method": "Dense theta scan (20001 points over [-pi, pi]) of the exact statevector expectation on the qv reference simulator; reproducible with 'qv run' plus the instance Hamiltonian.",
+  "note": "The 'pretrained weights' artifact type in action: binding theta to the ansatz reproduces the ground-state energy to ~1e-8 hartree without re-optimizing."
+}

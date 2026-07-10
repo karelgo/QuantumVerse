@@ -1,0 +1,17 @@
+{
+  "instance_version": "0.1",
+  "name": "h2-sto3g",
+  "kind": "qubit-hamiltonian",
+  "summary": "Tapered 2-qubit Hamiltonian of molecular H2 in the STO-3G basis at bond length R = 0.735 angstrom.",
+  "convention": "Pauli labels read left-to-right as qubit 1, qubit 0 (qubit 0 is the rightmost character); little-endian to match the qv simulator.",
+  "units": "hartree",
+  "terms": [
+    { "pauli": "II", "coeff": -1.052373245772859 },
+    { "pauli": "IZ", "coeff": 0.39793742484318045 },
+    { "pauli": "ZI", "coeff": -0.39793742484318045 },
+    { "pauli": "ZZ", "coeff": -0.01128010425623538 },
+    { "pauli": "XX", "coeff": 0.18093119978423156 }
+  ],
+  "exact_ground_energy": -1.8572750302023797,
+  "source": "Standard textbook parity-tapered H2/STO-3G Hamiltonian (see e.g. Kandala et al., Nature 549, 242 (2017), and the Qiskit textbook VQE chapter)."
+}

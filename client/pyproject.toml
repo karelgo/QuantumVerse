@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantumverse"
+version = "0.1.0"
+description = "Reference client for QuantumVerse: experiment capsules, circuit cards, qv: addressing, and the qv CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "rfc8785",
+    "jsonschema",
+    "httpx",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+qiskit = ["qiskit"]
+
+[project.scripts]
+qv = "quantumverse.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+quantumverse = ["schemas/*.json"]

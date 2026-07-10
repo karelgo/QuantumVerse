@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/execution.schema.json",
+  "title": "Capsule execution.json — what came back (RFC-0001)",
+  "type": "object",
+  "required": ["job_ids", "shots", "counts_raw"],
+  "additionalProperties": false,
+  "properties": {
+    "job_ids": {
+      "description": "Provider job identifiers; empty array permitted for local simulator runs.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "submitted": { "type": "string", "format": "date-time" },
+    "completed": { "type": "string", "format": "date-time" },
+    "shots": { "type": "integer", "minimum": 1 },
+    "counts_raw": {
+      "description": "Untouched measurement counts keyed by classical bitstring.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[01]+$" },
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "counts_mitigated": {
+      "description": "Optional; MUST be reproducible from counts_raw plus mitigation.json.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[01]+$" },
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    },
+    "parameters": {
+      "description": "Bound values for parameterized circuits, keyed by parameter name.",
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "number" },
+          { "type": "array", "items": { "type": "number" } }
+        ]
+      }
+    }
+  }
+}

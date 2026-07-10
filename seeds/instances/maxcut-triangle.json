@@ -1,0 +1,12 @@
+{
+  "instance_version": "0.1",
+  "name": "maxcut-triangle",
+  "kind": "maxcut",
+  "summary": "MaxCut on the triangle graph K3 with unit weights — the smallest frustrated instance.",
+  "nodes": 3,
+  "edges": [[0, 1], [1, 2], [0, 2]],
+  "weights": [1, 1, 1],
+  "max_cut_value": 2,
+  "optimal_partitions": [["0"], ["1"], ["2"]],
+  "note": "Any single node against the other two attains the maximum cut of 2."
+}

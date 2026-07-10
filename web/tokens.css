@@ -1,0 +1,74 @@
+/* QuantumVerse design tokens — extracted from docs/index.html (the pitch site).
+   Keep values identical to the pitch site; both files should evolve together.
+   Theme resolution: system preference via prefers-color-scheme, overridable
+   with an explicit :root[data-theme="light|dark"] attribute. */
+
+:root {
+  --bg: #F4F5F8;
+  --surface: #FFFFFF;
+  --surface-2: #EBEDF3;
+  --ink: #161B2C;
+  --muted: #59617A;
+  --line: #D9DCE6;
+  --accent: #8F6400;          /* brass, darkened for light ground */
+  --accent-fill: #B07C0E;
+  --wire: #9AA1B6;
+  --good: #1D7A4A;
+  --code-bg: #10142A;         /* code stays chip-dark in both themes */
+  --code-ink: #D5DAEC;
+  --code-dim: #7C86A8;
+  --card-shadow: 0 1px 2px rgba(22,27,44,.05), 0 8px 28px rgba(22,27,44,.07);
+  --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --sans: system-ui, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0B0E1A;
+    --surface: #121629;
+    --surface-2: #1A2038;
+    --ink: #E8EAF3;
+    --muted: #99A2BC;
+    --line: #242B45;
+    --accent: #E0AC45;
+    --accent-fill: #C99835;
+    --wire: #4C5677;
+    --good: #4BC98A;
+    --code-bg: #0E1226;
+    --code-ink: #D5DAEC;
+    --code-dim: #7C86A8;
+    --card-shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0E1A;
+  --surface: #121629;
+  --surface-2: #1A2038;
+  --ink: #E8EAF3;
+  --muted: #99A2BC;
+  --line: #242B45;
+  --accent: #E0AC45;
+  --accent-fill: #C99835;
+  --wire: #4C5677;
+  --good: #4BC98A;
+  --code-bg: #0E1226;
+  --code-ink: #D5DAEC;
+  --code-dim: #7C86A8;
+  --card-shadow: none;
+}
+:root[data-theme="light"] {
+  --bg: #F4F5F8;
+  --surface: #FFFFFF;
+  --surface-2: #EBEDF3;
+  --ink: #161B2C;
+  --muted: #59617A;
+  --line: #D9DCE6;
+  --accent: #8F6400;
+  --accent-fill: #B07C0E;
+  --wire: #9AA1B6;
+  --good: #1D7A4A;
+  --code-bg: #10142A;
+  --code-ink: #D5DAEC;
+  --code-dim: #7C86A8;
+  --card-shadow: 0 1px 2px rgba(22,27,44,.05), 0 8px 28px rgba(22,27,44,.07);
+}
