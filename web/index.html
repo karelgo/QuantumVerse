@@ -65,6 +65,7 @@
   <span><span class="ket">|qv⟩</span> <span class="name">QuantumVerse</span></span>
   <span class="sub">playground — every circuit runs in your browser (Rust→WASM statevector, ≤24 qubits)</span>
   <span class="spacer"></span>
+  <a class="sub" href="./hub.html">Hub ↗</a>
   <a class="sub" href="https://github.com/karelgo/QuantumVerse">GitHub ↗</a>
 </header>
 <main>
@@ -408,9 +409,11 @@ async function buildLibrary() {
     note = 'no registry reachable — built-in examples (run qv-registry --web web/ for the live library)';
   }
   lib.innerHTML = '';
+  const buttons = {};
   for (const item of items) {
     const btn = document.createElement('button');
     btn.innerHTML = `${item.name}<span class="lib-type">${item.type}</span>`;
+    buttons[item.name] = btn;
     btn.addEventListener('click', async () => {
       selectLibraryButton(btn);
       status.className = ''; status.textContent = 'loading…';
@@ -431,7 +434,10 @@ async function buildLibrary() {
     lib.appendChild(btn);
   }
   $('libnote').textContent = note;
-  lib.firstChild?.click();
+  // Deep link from the hub: #load=qv:ns/name selects that circuit if present.
+  const m = location.hash.match(/load=(?:qv:)?([a-z0-9-]+\/[a-z0-9-]+)/i);
+  const wanted = m && items.find(it => it.name === m[1]);
+  (wanted ? buttons[wanted.name] : lib.firstChild)?.click();
 }
 
 $('run').addEventListener('click', runCircuit);
