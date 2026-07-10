@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/device.schema.json",
+  "title": "Capsule device.json — backend identity + calibration snapshot (RFC-0001)",
+  "type": "object",
+  "required": ["backend", "captured", "topology", "simulator"],
+  "additionalProperties": false,
+  "properties": {
+    "backend": {
+      "type": "object",
+      "required": ["provider", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string" }
+      }
+    },
+    "captured": { "type": "string", "format": "date-time" },
+    "topology": {
+      "type": "object",
+      "required": ["num_qubits"],
+      "additionalProperties": false,
+      "properties": {
+        "num_qubits": { "type": "integer", "minimum": 1 },
+        "coupling_map": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "qubits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "t1_us": { "type": "number", "exclusiveMinimum": 0 },
+          "t2_us": { "type": "number", "exclusiveMinimum": 0 },
+          "readout_error": { "type": "number", "minimum": 0, "maximum": 1 },
+          "frequency_ghz": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gate", "qubits"],
+        "additionalProperties": false,
+        "properties": {
+          "gate": { "type": "string", "minLength": 1 },
+          "qubits": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 1 },
+          "error": { "type": "number", "minimum": 0, "maximum": 1 },
+          "duration_ns": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    },
+    "simulator": {
+      "description": "null for physical hardware; simulator description for simulator capsules.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["engine", "method"],
+          "additionalProperties": false,
+          "properties": {
+            "engine": { "type": "string", "minLength": 1 },
+            "method": { "enum": ["statevector", "density", "mps", "clifford"] },
+            "seed": { "type": "integer" },
+            "noise_model": { "type": ["object", "null"] }
+          }
+        }
+      ]
+    }
+  }
+}

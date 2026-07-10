@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  client:
+    name: client (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e "./client[dev]"
+      - name: Test
+        run: pytest client/tests -q
+
+  api:
+    name: api (FastAPI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install -e ./client
+          pip install -e "./api[dev]"
+      - name: Test
+        run: pytest api/tests -q
+
+  sim:
+    name: sim (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Test (native)
+        run: cargo test --manifest-path sim/Cargo.toml
+      - name: Build (wasm)
+        run: cargo build --manifest-path sim/Cargo.toml --release --target wasm32-unknown-unknown
+
+  spec:
+    name: spec (schemas valid, vendored copies in sync)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate schemas compile
+        run: |
+          pip install jsonschema
+          python - <<'EOF'
+          import json, pathlib
+          from jsonschema import Draft202012Validator
+          for p in sorted(pathlib.Path("spec/schemas").glob("*.json")):
+              Draft202012Validator.check_schema(json.loads(p.read_text()))
+              print(f"OK {p}")
+          EOF
+      - name: Vendored schemas in sync
+        run: diff -r spec/schemas client/src/quantumverse/schemas

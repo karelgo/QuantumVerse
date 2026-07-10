@@ -1,0 +1,23 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+
+# Rust
+sim/target/
+
+# Node
+node_modules/
+
+# Local registry / API data
+api/data/
+.qv/
+
+# Editors & OS
+.DS_Store
+.idea/
+.vscode/

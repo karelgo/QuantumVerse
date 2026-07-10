@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/manifest.schema.json",
+  "title": "Experiment Capsule manifest (RFC-0001)",
+  "type": "object",
+  "required": ["capsule_version", "id", "created", "title", "authors", "license", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "capsule_version": { "const": "0.1" },
+    "id": {
+      "description": "sha256 of the canonical manifest with this field set to the empty string. Empty string only during hashing.",
+      "type": "string",
+      "pattern": "^(sha256:[0-9a-f]{64}|)$"
+    },
+    "created": { "type": "string", "format": "date-time" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "authors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "orcid": { "type": "string", "pattern": "^\\d{4}-\\d{4}-\\d{4}-\\d{3}[0-9X]$" },
+          "profile": { "type": "string", "pattern": "^qv:users/[a-z0-9][a-z0-9-]*$" }
+        }
+      }
+    },
+    "license": { "type": "string", "minLength": 1 },
+    "artifacts": {
+      "description": "Optional back-references to hub artifacts this experiment instantiates (RFC-0003 URIs).",
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^qv:[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*(@[A-Za-z0-9.+-]+)?$" }
+    },
+    "files": {
+      "type": "object",
+      "description": "Digest of every capsule file except the manifest itself. circuit.qasm, device.json, execution.json and environment.lock are always required; compiled.qasm is required for hardware capsules (enforced by validators, not by this schema).",
+      "required": ["circuit.qasm", "device.json", "execution.json", "environment.lock"],
+      "additionalProperties": false,
+      "properties": {
+        "circuit.qasm": { "$ref": "#/$defs/digest" },
+        "compiled.qasm": { "$ref": "#/$defs/digest" },
+        "device.json": { "$ref": "#/$defs/digest" },
+        "execution.json": { "$ref": "#/$defs/digest" },
+        "mitigation.json": { "$ref": "#/$defs/digest" },
+        "environment.lock": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "replay_of": {
+      "description": "Capsule id this capsule replays, or null.",
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      ]
+    },
+    "replay_level": {
+      "description": "Replay fidelity level per RFC-0001 (present only when replay_of is set).",
+      "enum": ["L1", "L2", "L3"]
+    },
+    "doi": {
+      "oneOf": [ { "type": "null" }, { "type": "string", "minLength": 1 } ]
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

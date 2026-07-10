@@ -2,9 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | Draft |
+| **Status** | Review |
 | **Version** | 0.1 |
 | **Discussion** | this repository's issues/PRs |
+| **Schemas** | [`spec/schemas/`](../spec/schemas/) — manifest, device, execution, mitigation |
 
 ## Summary
 
@@ -97,7 +98,7 @@ Two consequences worth stating: capsules are immutable (any edit is a new capsul
 
 ## File schemas
 
-Schemas are illustrative rather than exhaustive in v0.1; canonical JSON Schema documents will accompany the Review status.
+The JSON examples below are illustrative; the normative JSON Schema documents live in [`spec/schemas/`](../spec/schemas/) and are what validators enforce.
 
 ### `device.json` — the calibration snapshot
 

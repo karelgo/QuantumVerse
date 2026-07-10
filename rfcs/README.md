@@ -27,4 +27,6 @@ Anything another implementation would have to interoperate with: artifact format
 
 | RFC | Title | Status |
 |---|---|---|
-| [0001](rfc-0001-experiment-capsule.md) | Experiment Capsule format | Draft |
+| [0001](rfc-0001-experiment-capsule.md) | Experiment Capsule format | Review |
+| [0002](rfc-0002-circuit-card.md) | Circuit Card format | Draft |
+| [0003](rfc-0003-artifact-addressing.md) | Artifact addressing and `qv:` URIs | Draft |
