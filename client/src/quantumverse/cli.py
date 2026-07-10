@@ -16,9 +16,10 @@ from .capsule import Capsule, CapsuleError
 from .cards import CardError, build_card
 from .hub import ARTIFACT_TYPES, load, push
 from .qasm import QasmError, parse_qasm
+from .devices import RECORD_VERSION, DeviceRecordError
 from .registry import RegistryError, get_registry
 from .simulator import SimulatorError, run
-from .uris import QvUriError, VersionError
+from .uris import QvUriError, VersionError, parse_uri
 from .verify import (
     VerifyError,
     load_ci_config,
@@ -188,6 +189,119 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# device commands (RFC-0004)
+# ---------------------------------------------------------------------------
+
+
+def _device_ref(text: str) -> tuple[str, str]:
+    """Accept ``owner/name`` or ``qv:device/owner/name``."""
+    uri = parse_uri(text)
+    if uri.kind == "device":
+        return uri.namespace, uri.name
+    if uri.kind == "artifact" and uri.version is None:
+        return uri.namespace, uri.name
+    raise QvUriError(f"{text!r} is not a device reference (want qv:device/<owner>/<name>)")
+
+
+def _cmd_device_register(args: argparse.Namespace) -> int:
+    owner, name = _device_ref(args.ref)
+    if args.record:
+        record = _read_json(args.record)
+    else:
+        if not (args.summary and args.modality):
+            raise DeviceRecordError(
+                "device registration needs --record FILE, or --summary and --modality"
+            )
+        record = {
+            "record_version": RECORD_VERSION,
+            "summary": args.summary,
+            "modality": args.modality,
+            "backend": {
+                "provider": args.provider or owner,
+                "name": args.backend_name or name,
+            },
+        }
+        lineage = {
+            key: value
+            for key, value in (
+                ("architecture", args.architecture),
+                ("fab", args.fab),
+                ("generation", args.generation),
+                ("commissioned", args.commissioned),
+                ("supersedes", args.supersedes),
+            )
+            if value
+        }
+        if lineage:
+            record["lineage"] = lineage
+    card = get_registry(args.registry).register_device(owner, name, record)
+    print(f"registered {card['ref']}")
+    return 0
+
+
+def _format_device_card(card: dict) -> str:
+    record = card.get("record", {})
+    backend = record.get("backend", {})
+    lines = [
+        f"{card.get('ref')}",
+        f"  summary:   {record.get('summary', '?')}",
+        f"  modality:  {record.get('modality', '?')}",
+        f"  backend:   {backend.get('provider', '?')}/{backend.get('name', '?')}"
+        "  (capsule join key)",
+    ]
+    lineage = record.get("lineage") or {}
+    if lineage:
+        parts = [f"{k}={v}" for k, v in sorted(lineage.items())]
+        lines.append(f"  lineage:   {' · '.join(parts)}")
+    lines.append(
+        f"  history:   {card.get('calibration_count', 0)} calibration snapshot(s), "
+        f"{card.get('capsule_count', 0)} from capsules"
+    )
+    latest = card.get("latest_calibration")
+    if latest:
+        summary = latest.get("summary", {})
+        stats = " · ".join(f"{k}={v}" for k, v in sorted(summary.items()))
+        lines.append(f"  latest:    {latest.get('captured', '?')}  {stats}")
+    return "\n".join(lines)
+
+
+def _cmd_device_show(args: argparse.Namespace) -> int:
+    owner, name = _device_ref(args.ref)
+    print(_format_device_card(get_registry(args.registry).get_device(owner, name)))
+    return 0
+
+
+def _cmd_device_list(args: argparse.Namespace) -> int:
+    devices = get_registry(args.registry).list_devices()
+    if not devices:
+        print("no devices registered")
+        return 0
+    for card in devices:
+        record = card.get("record", {})
+        print(
+            f"{card.get('ref')}  [{record.get('modality', '?')}]  "
+            f"{card.get('calibration_count', 0)} calibration(s) — {record.get('summary', '')}"
+        )
+    return 0
+
+
+def _cmd_device_drift(args: argparse.Namespace) -> int:
+    owner, name = _device_ref(args.ref)
+    entries = get_registry(args.registry).device_calibrations(owner, name, limit=args.limit)
+    if not entries:
+        print(f"no calibration history for qv:device/{owner}/{name}")
+        return 0
+    print(f"qv:device/{owner}/{name} — {len(entries)} snapshot(s), newest first")
+    for entry in entries:
+        summary = entry.get("summary", {})
+        stats = " · ".join(f"{k}={v}" for k, v in sorted(summary.items()))
+        source = entry.get("capsule")
+        origin = f"capsule/{source.split(':', 1)[1][:6]}" if source else "direct submission"
+        print(f"  {entry.get('captured', '?')}  {stats}  ({origin})")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # registry commands
 # ---------------------------------------------------------------------------
 
@@ -333,6 +447,41 @@ def _build_parser() -> argparse.ArgumentParser:
                        metavar="FILE", help="CI config (default: quantumverse.ci.json)")
     p_qci.set_defaults(func=_cmd_ci)
 
+    # qv device ...
+    p_device = sub.add_parser("device", help="register and inspect devices (RFC-0004)")
+    p_device.set_defaults(func=lambda _args: (p_device.print_help(), 2)[1])
+    device_sub = p_device.add_subparsers(dest="device_command", metavar="ACTION")
+
+    p_dr = device_sub.add_parser("register", help="register a device record")
+    p_dr.add_argument("ref", metavar="REF", help="qv:device/<owner>/<name> or <owner>/<name>")
+    p_dr.add_argument("--record", metavar="FILE", help="full RFC-0004 record JSON")
+    p_dr.add_argument("--summary", help="one-line device summary")
+    p_dr.add_argument("--modality", help="e.g. superconducting-transmon, trapped-ion, simulator")
+    p_dr.add_argument("--provider", help="backend.provider capsules carry (default: owner)")
+    p_dr.add_argument("--backend-name", help="backend.name capsules carry (default: name)")
+    p_dr.add_argument("--architecture", help="lineage: chip architecture")
+    p_dr.add_argument("--fab", help="lineage: fabrication facility")
+    p_dr.add_argument("--generation", help="lineage: chip generation / batch")
+    p_dr.add_argument("--commissioned", help="lineage: commissioning date (YYYY-MM-DD)")
+    p_dr.add_argument("--supersedes", help="lineage: qv:device/... this machine replaces")
+    p_dr.add_argument("--registry", metavar="URL", help="registry URL (default: QV_REGISTRY_URL or ~/.qv)")
+    p_dr.set_defaults(func=_cmd_device_register)
+
+    p_ds = device_sub.add_parser("show", help="render a Device Card")
+    p_ds.add_argument("ref", metavar="REF")
+    p_ds.add_argument("--registry", metavar="URL")
+    p_ds.set_defaults(func=_cmd_device_show)
+
+    p_dl = device_sub.add_parser("list", help="list registered devices")
+    p_dl.add_argument("--registry", metavar="URL")
+    p_dl.set_defaults(func=_cmd_device_list)
+
+    p_dd = device_sub.add_parser("drift", help="print the calibration timeline, newest first")
+    p_dd.add_argument("ref", metavar="REF")
+    p_dd.add_argument("--limit", type=int, default=20, help="max snapshots (default 20)")
+    p_dd.add_argument("--registry", metavar="URL")
+    p_dd.set_defaults(func=_cmd_device_drift)
+
     # qv push / pull / search
     p_push = sub.add_parser("push", help="publish an artifact version to a registry")
     p_push.add_argument("path", metavar="PATH", help="payload file or directory")
@@ -377,6 +526,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         VersionError,
         RegistryError,
         VerifyError,
+        DeviceRecordError,
         FileNotFoundError,
         ValueError,
         KeyError,

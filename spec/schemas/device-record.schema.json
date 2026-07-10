@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/device-record.schema.json",
+  "title": "Device record (RFC-0004)",
+  "type": "object",
+  "required": ["record_version", "summary", "modality", "backend"],
+  "additionalProperties": false,
+  "properties": {
+    "record_version": { "const": "0.1" },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "modality": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "maxLength": 60 },
+    "backend": {
+      "description": "The {provider, name} identity this machine's capsules carry in device.json — the join key for automatic calibration linkage.",
+      "type": "object",
+      "required": ["provider", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "architecture": { "type": "string" },
+        "fab": { "type": "string" },
+        "generation": { "type": "string" },
+        "commissioned": { "type": "string", "format": "date" },
+        "supersedes": { "type": "string", "pattern": "^qv:device/[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" }
+      }
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "format": "uri" }
+    }
+  }
+}

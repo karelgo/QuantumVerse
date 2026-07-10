@@ -85,6 +85,25 @@ def main(argv: list[str] | None = None) -> int:
         print(_push(SEEDS / "parameters" / f"{name}.json", f"qv:seeds/{name}",
                     "parameters", summary, tags, registry))
 
+    # Register the reference simulator as a device (RFC-0004) so capsules that
+    # ran on it feed its calibration timeline automatically.
+    try:
+        registry.register_device(
+            "quantumverse", "qv-sim",
+            {
+                "record_version": "0.1",
+                "summary": "QuantumVerse reference statevector simulator (qv-sim)",
+                "modality": "simulator",
+                "backend": {"provider": "quantumverse", "name": "qv-sim"},
+            },
+        )
+        print("device  qv:device/quantumverse/qv-sim")
+    except RegistryError as exc:
+        if "already" in str(exc) or "409" in str(exc):
+            print("exists  qv:device/quantumverse/qv-sim")
+        else:
+            raise
+
     if args.with_capsule:
         qasm_text = (SEEDS / "circuits" / "bell.qasm").read_text(encoding="utf-8")
         result = run(parse_qasm(qasm_text), shots=4096, seed=42)

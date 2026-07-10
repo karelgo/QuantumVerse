@@ -29,6 +29,10 @@
   #library button.active { background: var(--surface); border-color: var(--accent); }
   #library .lib-type { color: var(--muted); font-size: .66rem; display: block; }
   #libnote { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-top: 10px; }
+  #devices { margin-top: 22px; }
+  .device-card { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; background: var(--surface); }
+  .device-card .d-ref { font-family: var(--mono); font-size: .72rem; color: var(--accent); word-break: break-all; }
+  .device-card .d-meta { font-family: var(--mono); font-size: .66rem; color: var(--muted); margin-top: 3px; }
 
   /* editor */
   #editor { width: 100%; min-height: 320px; background: var(--code-bg); color: var(--code-ink); font-family: var(--mono); font-size: .82rem; border: 1px solid var(--line); border-radius: 10px; padding: 12px; resize: vertical; }
@@ -68,6 +72,10 @@
     <h2>Library</h2>
     <div id="library"></div>
     <div id="libnote"></div>
+    <div id="devices" hidden>
+      <h2>Devices</h2>
+      <div id="deviceList"></div>
+    </div>
   </section>
 
   <section class="panel">
@@ -152,6 +160,35 @@ cx q[1], q[0];
 let simPromise = loadSim('./qv_sim.wasm');
 let currentBindings = {};
 let ansatzParams = {};   // "ns/name" -> {param: value} from parameters artifacts
+
+async function fetchDevices() {
+  // Device Registry (RFC-0004): every machine gets a public identity; its
+  // calibration timeline accrues automatically from capsule traffic.
+  try {
+    const resp = await fetch('./api/v1/devices');
+    if (!resp.ok) return;
+    const devices = (await resp.json()).devices ?? [];
+    if (!devices.length) return;
+    const list = document.getElementById('deviceList');
+    list.innerHTML = '';
+    for (const card of devices) {
+      const record = card.record ?? {};
+      const div = document.createElement('div');
+      div.className = 'device-card';
+      const latest = card.latest_calibration;
+      const stats = latest
+        ? `${latest.captured} · ${Object.entries(latest.summary ?? {}).map(([k, v]) => `${k} ${v}`).join(' · ')}`
+        : 'no calibration history yet';
+      div.innerHTML =
+        `<div class="d-ref">${card.ref}</div>` +
+        `<div class="d-meta">${record.modality ?? '?'} — ${record.summary ?? ''}</div>` +
+        `<div class="d-meta">${card.capsule_count ?? 0} capsule(s) · ${card.calibration_count ?? 0} snapshot(s)</div>` +
+        `<div class="d-meta">${stats}</div>`;
+      list.appendChild(div);
+    }
+    document.getElementById('devices').hidden = false;
+  } catch { /* devices panel is registry-only */ }
+}
 
 async function fetchAnsatzParams() {
   // The reuse loop, in the browser: parameters artifacts declare which ansatz
@@ -321,6 +358,7 @@ async function buildLibrary() {
   try {
     items = await fetchRegistryLibrary();
     await fetchAnsatzParams();
+    fetchDevices();
     note = `${items.length} circuits from the live registry`;
   } catch {
     items = EXAMPLES;

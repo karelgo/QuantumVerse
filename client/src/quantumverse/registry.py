@@ -18,6 +18,7 @@ from typing import Optional, Union
 import httpx
 
 from .canonical import digest_bytes, is_digest
+from .devices import calibration_summary, validate_record
 from .uris import resolve_version
 
 __all__ = ["RegistryError", "LocalRegistry", "RemoteRegistry", "get_registry"]
@@ -60,8 +61,13 @@ class LocalRegistry:
 
     def _load_index(self) -> dict:
         if self._index_path.exists():
-            return json.loads(self._index_path.read_text(encoding="utf-8"))
-        return {"artifacts": {}, "capsules": {}}
+            index = json.loads(self._index_path.read_text(encoding="utf-8"))
+        else:
+            index = {}
+        index.setdefault("artifacts", {})
+        index.setdefault("capsules", {})
+        index.setdefault("devices", {})
+        return index
 
     def _save_index(self, index: dict) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -212,8 +218,38 @@ class LocalRegistry:
         index["capsules"][hexid] = {
             "files": {path: self.put_blob(data) for path, data in files.items()}
         }
+        self._link_capsule_calibration(index, capsule_id, files)
         self._save_index(index)
         return capsule_id
+
+    def _link_capsule_calibration(
+        self, index: dict, capsule_id: str, files: dict[str, bytes]
+    ) -> None:
+        """RFC-0004 rule 1: matching capsules feed the device's timeline."""
+        raw = files.get("device.json")
+        if raw is None:
+            return
+        try:
+            device_doc = json.loads(raw.decode("utf-8"))
+            backend = device_doc.get("backend") or {}
+            identity = (backend.get("provider"), backend.get("name"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return
+        for entry in index["devices"].values():
+            record_backend = entry["record"]["backend"]
+            if (record_backend["provider"], record_backend["name"]) != identity:
+                continue
+            if any(c.get("capsule") == capsule_id for c in entry["calibrations"]):
+                return
+            entry["calibrations"].append(
+                {
+                    "captured": device_doc.get("captured", ""),
+                    "snapshot": self.put_blob(raw),
+                    "capsule": capsule_id,
+                    "summary": calibration_summary(device_doc),
+                }
+            )
+            return
 
     def get_capsule(self, hexid: str) -> dict:
         index = self._load_index()
@@ -227,6 +263,65 @@ class LocalRegistry:
         full = matches[0]
         entry = index["capsules"][full]
         return {"id": f"sha256:{full}", "files": dict(entry["files"])}
+
+    # -- devices (RFC-0004) ---------------------------------------------------------
+
+    def register_device(self, namespace: str, name: str, record: dict) -> dict:
+        validate_record(record)
+        index = self._load_index()
+        key = f"{namespace}/{name}"
+        if key in index["devices"]:
+            raise RegistryError(f"device {key} is already registered")
+        identity = (record["backend"]["provider"], record["backend"]["name"])
+        for other_key, entry in index["devices"].items():
+            other = entry["record"]["backend"]
+            if (other["provider"], other["name"]) == identity:
+                raise RegistryError(
+                    f"backend identity {identity[0]}/{identity[1]} is already claimed "
+                    f"by device {other_key}"
+                )
+        index["devices"][key] = {"record": record, "calibrations": []}
+        self._save_index(index)
+        return self.get_device(namespace, name)
+
+    def _device_entry(self, index: dict, namespace: str, name: str) -> dict:
+        entry = index["devices"].get(f"{namespace}/{name}")
+        if entry is None:
+            raise RegistryError(f"device {namespace}/{name} not found in {self.root}")
+        return entry
+
+    def get_device(self, namespace: str, name: str) -> dict:
+        index = self._load_index()
+        entry = self._device_entry(index, namespace, name)
+        calibrations = sorted(entry["calibrations"], key=lambda c: c.get("captured", ""))
+        latest = calibrations[-1] if calibrations else None
+        return {
+            "ref": f"qv:device/{namespace}/{name}",
+            "namespace": namespace,
+            "name": name,
+            "record": entry["record"],
+            "calibration_count": len(calibrations),
+            "capsule_count": sum(1 for c in calibrations if c.get("capsule")),
+            "latest_calibration": (
+                {"captured": latest["captured"], "summary": latest["summary"]}
+                if latest
+                else None
+            ),
+        }
+
+    def list_devices(self) -> list[dict]:
+        index = self._load_index()
+        return [
+            self.get_device(*key.split("/", 1)) for key in sorted(index["devices"])
+        ]
+
+    def device_calibrations(self, namespace: str, name: str, limit: int = 100) -> list[dict]:
+        index = self._load_index()
+        entry = self._device_entry(index, namespace, name)
+        ordered = sorted(
+            entry["calibrations"], key=lambda c: c.get("captured", ""), reverse=True
+        )
+        return ordered[:limit]
 
 
 class RemoteRegistry:
@@ -327,6 +422,27 @@ class RemoteRegistry:
 
     def get_capsule(self, hexid: str) -> dict:
         return self._request("GET", f"/api/v1/capsules/{hexid}").json()
+
+    # -- devices (RFC-0004) -----------------------------------------------------------
+
+    def register_device(self, namespace: str, name: str, record: dict) -> dict:
+        validate_record(record)
+        return self._request(
+            "POST", f"/api/v1/devices/{namespace}/{name}", json={"record": record}
+        ).json()
+
+    def get_device(self, namespace: str, name: str) -> dict:
+        return self._request("GET", f"/api/v1/devices/{namespace}/{name}").json()
+
+    def list_devices(self) -> list[dict]:
+        return self._request("GET", "/api/v1/devices").json()["devices"]
+
+    def device_calibrations(self, namespace: str, name: str, limit: int = 100) -> list[dict]:
+        return self._request(
+            "GET",
+            f"/api/v1/devices/{namespace}/{name}/calibrations",
+            params={"limit": limit},
+        ).json()["calibrations"]
 
 
 Registry = Union[LocalRegistry, RemoteRegistry]

@@ -9,6 +9,7 @@ Machine-readable companions to the [RFCs](../rfcs/). The RFCs are the normative 
 | [`schemas/execution.schema.json`](schemas/execution.schema.json) | `execution.json` — shots, counts, parameters | [RFC-0001](../rfcs/rfc-0001-experiment-capsule.md) |
 | [`schemas/mitigation.schema.json`](schemas/mitigation.schema.json) | `mitigation.json` — the mitigation pipeline | [RFC-0001](../rfcs/rfc-0001-experiment-capsule.md) |
 | [`schemas/circuit-card.schema.json`](schemas/circuit-card.schema.json) | `card.json` — the Circuit Card | [RFC-0002](../rfcs/rfc-0002-circuit-card.md) |
+| [`schemas/device-record.schema.json`](schemas/device-record.schema.json) | Device Registry records | [RFC-0004](../rfcs/rfc-0004-device-records.md) |
 
 Addressing (`qv:` URIs) is defined in [RFC-0003](../rfcs/rfc-0003-artifact-addressing.md); its grammar is enforced in code (see `client/src/quantumverse/uris.py`) rather than by JSON Schema.
 

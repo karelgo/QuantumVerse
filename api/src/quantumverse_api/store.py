@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 from quantumverse.canonical import digest_bytes, is_digest
+from quantumverse.devices import calibration_summary
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS artifacts (
@@ -38,7 +39,30 @@ CREATE TABLE IF NOT EXISTS capsules (
     title   TEXT,
     created TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
+CREATE TABLE IF NOT EXISTS devices (
+    id        INTEGER PRIMARY KEY,
+    namespace TEXT NOT NULL,
+    name      TEXT NOT NULL,
+    record    TEXT NOT NULL,     -- JSON device record (RFC-0004)
+    provider  TEXT NOT NULL,     -- backend.provider (join key for capsules)
+    backend   TEXT NOT NULL,     -- backend.name
+    created   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE (namespace, name),
+    UNIQUE (provider, backend)
+);
+CREATE TABLE IF NOT EXISTS calibrations (
+    id        INTEGER PRIMARY KEY,
+    device_id INTEGER NOT NULL REFERENCES devices(id),
+    captured  TEXT NOT NULL,
+    snapshot  TEXT NOT NULL,     -- blob digest of the full device.json
+    capsule   TEXT,              -- capsule id, or NULL for direct submissions
+    summary   TEXT NOT NULL      -- JSON summary derived at ingest
+);
 """
+
+
+# calibration_summary is shared with the client (quantumverse.devices) so
+# timelines are derived identically everywhere.
 
 
 class StoreError(ValueError):
@@ -233,7 +257,47 @@ class Store:
                 "INSERT OR REPLACE INTO capsules (hexid, files, title) VALUES (?, ?, ?)",
                 (hexid, json.dumps(file_digests, sort_keys=True), title),
             )
+        self._link_capsule_calibration(capsule_id, files)
         return capsule_id
+
+    def _link_capsule_calibration(self, capsule_id: str, files: dict[str, bytes]) -> None:
+        """RFC-0004 rule 1: a capsule whose device.json backend identity matches
+        a registered device appends to that device's calibration timeline."""
+        raw = files.get("device.json")
+        if raw is None:
+            return
+        try:
+            device_doc = json.loads(raw.decode("utf-8"))
+            backend = device_doc.get("backend") or {}
+            provider, name = backend.get("provider"), backend.get("name")
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return
+        if not provider or not name:
+            return
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT id FROM devices WHERE provider=? AND backend=?",
+                (provider, name),
+            ).fetchone()
+            if row is None:
+                return
+            already = conn.execute(
+                "SELECT 1 FROM calibrations WHERE device_id=? AND capsule=?",
+                (row["id"], capsule_id),
+            ).fetchone()
+            if already:
+                return
+            conn.execute(
+                "INSERT INTO calibrations (device_id, captured, snapshot, capsule, summary)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (
+                    row["id"],
+                    device_doc.get("captured", ""),
+                    self.put_blob(raw),
+                    capsule_id,
+                    json.dumps(calibration_summary(device_doc), sort_keys=True),
+                ),
+            )
 
     def get_capsule(self, hexid_prefix: str) -> dict:
         with self._connect() as conn:
@@ -259,6 +323,133 @@ class Store:
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT hexid, title, created FROM capsules ORDER BY created DESC, hexid"
+            ).fetchall()
+        return [
+            {"id": f"sha256:{r['hexid']}", "title": r["title"], "created": r["created"]}
+            for r in rows
+        ]
+
+    # -- devices (RFC-0004) --------------------------------------------------------
+
+    def register_device(self, namespace: str, name: str, record: dict) -> dict:
+        backend = record["backend"]
+        with self._lock, self._connect() as conn:
+            exists = conn.execute(
+                "SELECT 1 FROM devices WHERE namespace=? AND name=?", (namespace, name)
+            ).fetchone()
+            if exists:
+                raise Conflict(f"device {namespace}/{name} is already registered")
+            claimed = conn.execute(
+                "SELECT namespace, name FROM devices WHERE provider=? AND backend=?",
+                (backend["provider"], backend["name"]),
+            ).fetchone()
+            if claimed:
+                raise Conflict(
+                    f"backend identity {backend['provider']}/{backend['name']} is already "
+                    f"claimed by device {claimed['namespace']}/{claimed['name']}"
+                )
+            conn.execute(
+                "INSERT INTO devices (namespace, name, record, provider, backend)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (
+                    namespace,
+                    name,
+                    json.dumps(record, sort_keys=True),
+                    backend["provider"],
+                    backend["name"],
+                ),
+            )
+        return self.get_device(namespace, name)
+
+    def _device_row(self, conn: sqlite3.Connection, namespace: str, name: str) -> sqlite3.Row:
+        row = conn.execute(
+            "SELECT id, record, created FROM devices WHERE namespace=? AND name=?",
+            (namespace, name),
+        ).fetchone()
+        if row is None:
+            raise NotFound(f"device {namespace}/{name} not found")
+        return row
+
+    def get_device(self, namespace: str, name: str) -> dict:
+        with self._connect() as conn:
+            row = self._device_row(conn, namespace, name)
+            latest = conn.execute(
+                "SELECT captured, summary FROM calibrations WHERE device_id=?"
+                " ORDER BY captured DESC, id DESC LIMIT 1",
+                (row["id"],),
+            ).fetchone()
+            counts = conn.execute(
+                "SELECT COUNT(*) AS n, COUNT(capsule) AS c FROM calibrations WHERE device_id=?",
+                (row["id"],),
+            ).fetchone()
+        card = {
+            "ref": f"qv:device/{namespace}/{name}",
+            "namespace": namespace,
+            "name": name,
+            "record": json.loads(row["record"]),
+            "registered": row["created"],
+            "calibration_count": counts["n"],
+            "capsule_count": counts["c"],
+            "latest_calibration": (
+                {"captured": latest["captured"], "summary": json.loads(latest["summary"])}
+                if latest
+                else None
+            ),
+        }
+        return card
+
+    def list_devices(self) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT namespace, name FROM devices ORDER BY namespace, name"
+            ).fetchall()
+        return [self.get_device(r["namespace"], r["name"]) for r in rows]
+
+    def add_calibration(
+        self, namespace: str, name: str, device_doc: dict, raw: bytes, capsule: Optional[str] = None
+    ) -> dict:
+        summary = calibration_summary(device_doc)
+        with self._lock, self._connect() as conn:
+            row = self._device_row(conn, namespace, name)
+            conn.execute(
+                "INSERT INTO calibrations (device_id, captured, snapshot, capsule, summary)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (
+                    row["id"],
+                    device_doc.get("captured", ""),
+                    self.put_blob(raw),
+                    capsule,
+                    json.dumps(summary, sort_keys=True),
+                ),
+            )
+        return {"captured": device_doc.get("captured", ""), "summary": summary}
+
+    def device_calibrations(self, namespace: str, name: str, limit: int = 100) -> list[dict]:
+        with self._connect() as conn:
+            row = self._device_row(conn, namespace, name)
+            rows = conn.execute(
+                "SELECT captured, snapshot, capsule, summary FROM calibrations"
+                " WHERE device_id=? ORDER BY captured DESC, id DESC LIMIT ?",
+                (row["id"], limit),
+            ).fetchall()
+        return [
+            {
+                "captured": r["captured"],
+                "snapshot": r["snapshot"],
+                "capsule": r["capsule"],
+                "summary": json.loads(r["summary"]),
+            }
+            for r in rows
+        ]
+
+    def device_capsules(self, namespace: str, name: str) -> list[dict]:
+        with self._connect() as conn:
+            row = self._device_row(conn, namespace, name)
+            rows = conn.execute(
+                """SELECT c.hexid, c.title, c.created FROM calibrations cal
+                   JOIN capsules c ON ('sha256:' || c.hexid) = cal.capsule
+                   WHERE cal.device_id=? ORDER BY c.created DESC""",
+                (row["id"],),
             ).fetchall()
         return [
             {"id": f"sha256:{r['hexid']}", "title": r["title"], "created": r["created"]}

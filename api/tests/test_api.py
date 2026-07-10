@@ -231,3 +231,104 @@ def test_invalid_capsule_rejected(client):
 def test_capsule_lookup_errors(client):
     assert client.get("/api/v1/capsules/zz").status_code == 400
     assert client.get("/api/v1/capsules/abcdef").status_code == 404
+
+
+# -- devices (RFC-0004) -------------------------------------------------------
+
+DEVICE_RECORD = {
+    "record_version": "0.1",
+    "summary": "Reference simulator",
+    "modality": "simulator",
+    "backend": {"provider": "quantumverse", "name": "qv-sim"},
+}
+
+
+def test_device_register_and_card(client):
+    response = client.post(
+        "/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD}
+    )
+    assert response.status_code == 201
+    card = response.json()
+    assert card["ref"] == "qv:device/quantumverse/qv-sim"
+    assert card["calibration_count"] == 0
+
+    assert client.get("/api/v1/devices/quantumverse/qv-sim").json()["record"] == DEVICE_RECORD
+    assert client.get("/api/v1/devices").json()["devices"][0]["name"] == "qv-sim"
+    assert client.get("/api/v1/devices/no/body").status_code == 404
+
+
+def test_device_conflicts_and_validation(client):
+    assert client.post(
+        "/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD}
+    ).status_code == 201
+    # same address again
+    assert client.post(
+        "/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD}
+    ).status_code == 409
+    # same backend identity under a different address
+    assert client.post(
+        "/api/v1/devices/lab/clone", json={"record": DEVICE_RECORD}
+    ).status_code == 409
+    # schema-invalid record
+    assert client.post(
+        "/api/v1/devices/lab/bad", json={"record": {"record_version": "0.1"}}
+    ).status_code == 422
+    # malformed address
+    assert client.post(
+        "/api/v1/devices/BAD--/x", json={"record": DEVICE_RECORD}
+    ).status_code == 400
+
+
+def test_capsule_feeds_device_timeline(client):
+    client.post("/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD})
+    capsule = _bell_capsule()
+    assert client.post("/api/v1/capsules", json=_capsule_payload(capsule)).status_code == 201
+
+    card = client.get("/api/v1/devices/quantumverse/qv-sim").json()
+    assert card["calibration_count"] == 1
+    assert card["capsule_count"] == 1
+    assert card["latest_calibration"]["summary"]["num_qubits"] == 2
+
+    timeline = client.get(
+        "/api/v1/devices/quantumverse/qv-sim/calibrations"
+    ).json()["calibrations"]
+    assert timeline[0]["capsule"] == capsule.id
+    # the full snapshot is retrievable as a blob
+    snapshot = client.get(f"/api/v1/blobs/{timeline[0]['snapshot']}")
+    assert snapshot.status_code == 200
+    assert json.loads(snapshot.content)["backend"]["name"] == "qv-sim"
+
+    linked = client.get("/api/v1/devices/quantumverse/qv-sim/capsules").json()["capsules"]
+    assert linked[0]["id"] == capsule.id
+
+    # re-uploading the same capsule adds no duplicate timeline entry
+    client.post("/api/v1/capsules", json=_capsule_payload(capsule))
+    assert client.get(
+        "/api/v1/devices/quantumverse/qv-sim"
+    ).json()["calibration_count"] == 1
+
+
+def test_direct_calibration_submission(client):
+    client.post("/api/v1/devices/quantumverse/qv-sim", json={"record": DEVICE_RECORD})
+    snapshot = {
+        "backend": {"provider": "quantumverse", "name": "qv-sim"},
+        "captured": "2026-07-11T00:00:00Z",
+        "topology": {"num_qubits": 2},
+        "qubits": [{"index": 0, "t1_us": 100.0}, {"index": 1, "t1_us": 200.0}],
+        "gates": [],
+        "simulator": {"engine": "quantumverse.simulator", "method": "statevector"},
+    }
+    response = client.post(
+        "/api/v1/devices/quantumverse/qv-sim/calibrations", json=snapshot
+    )
+    assert response.status_code == 201
+    assert response.json()["summary"]["median_t1_us"] == 150.0
+
+    timeline = client.get(
+        "/api/v1/devices/quantumverse/qv-sim/calibrations"
+    ).json()["calibrations"]
+    assert timeline[0]["capsule"] is None  # direct submission, not capsule-backed
+
+    assert client.post(
+        "/api/v1/devices/quantumverse/qv-sim/calibrations", json={"nonsense": True}
+    ).status_code == 422

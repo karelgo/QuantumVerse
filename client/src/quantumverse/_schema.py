@@ -14,6 +14,7 @@ SCHEMA_NAMES = {
     "execution": "execution.schema.json",
     "mitigation": "mitigation.schema.json",
     "circuit-card": "circuit-card.schema.json",
+    "device-record": "device-record.schema.json",
 }
 
 

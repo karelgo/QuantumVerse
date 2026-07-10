@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from quantumverse._schema import schema_errors
 from quantumverse.capsule import Capsule
 from quantumverse.cards import CardError, build_card
 from quantumverse.hub import ARTIFACT_TYPES, PAYLOAD_FILES
@@ -61,6 +62,10 @@ class PublishVersion(BaseModel):
 
 class CapsuleUpload(BaseModel):
     files: dict[str, FileEntry]
+
+
+class DeviceRegistration(BaseModel):
+    record: dict
 
 
 def _check_ref(namespace: str, name: str) -> None:
@@ -235,6 +240,68 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
             raise HTTPException(404, str(exc)) from exc
         except Conflict as exc:
             raise HTTPException(409, str(exc)) from exc
+
+    # -- devices (RFC-0004) ---------------------------------------------------------
+
+    def _check_device_ref(owner: str, name: str) -> None:
+        try:
+            parse_uri(f"device/{owner}/{name}")
+        except QvUriError as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @app.post("/api/v1/devices/{owner}/{name}", status_code=201)
+    def register_device(owner: str, name: str, body: DeviceRegistration) -> dict:
+        _check_device_ref(owner, name)
+        errors = schema_errors("device-record", body.record)
+        if errors:
+            raise HTTPException(
+                422, {"detail": "device record is invalid", "errors": errors}
+            )
+        try:
+            return store.register_device(owner, name, body.record)
+        except Conflict as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/v1/devices")
+    def list_devices() -> dict:
+        return {"devices": store.list_devices()}
+
+    @app.get("/api/v1/devices/{owner}/{name}")
+    def get_device(owner: str, name: str) -> dict:
+        try:
+            return store.get_device(owner, name)
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/v1/devices/{owner}/{name}/calibrations", status_code=201)
+    def add_calibration(owner: str, name: str, body: dict) -> dict:
+        errors = schema_errors("device", body)
+        if errors:
+            raise HTTPException(
+                422, {"detail": "calibration snapshot is invalid device.json", "errors": errors}
+            )
+        from quantumverse.canonical import canonical_bytes
+
+        try:
+            return store.add_calibration(owner, name, body, canonical_bytes(body))
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/v1/devices/{owner}/{name}/calibrations")
+    def device_calibrations(
+        owner: str, name: str, limit: int = Query(default=100, ge=1, le=1000)
+    ) -> dict:
+        try:
+            return {"calibrations": store.device_calibrations(owner, name, limit=limit)}
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/v1/devices/{owner}/{name}/capsules")
+    def device_capsules(owner: str, name: str) -> dict:
+        try:
+            return {"capsules": store.device_capsules(owner, name)}
+        except NotFound as exc:
+            raise HTTPException(404, str(exc)) from exc
 
     # -- search ------------------------------------------------------------------
 
