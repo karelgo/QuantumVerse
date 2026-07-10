@@ -1,0 +1,33 @@
+{
+  "checks": [
+    {
+      "circuit": "seeds/circuits/bell.qasm",
+      "budgets": { "num_qubits": 2, "depth": 3, "t_count": 0, "two_qubit_gate_count": 1 },
+      "expect": { "probabilities": { "00": 0.5, "11": 0.5 }, "tolerance": 0.001 }
+    },
+    {
+      "circuit": "seeds/circuits/grover-2q.qasm",
+      "budgets": { "num_qubits": 2, "depth": 9, "t_count": 0 },
+      "expect": { "probabilities": { "11": 1.0 }, "tolerance": 0.001 }
+    },
+    {
+      "circuit": "seeds/circuits/ghz-5.qasm",
+      "budgets": { "num_qubits": 5, "depth": 6, "two_qubit_gate_count": 4 },
+      "expect": { "probabilities": { "00000": 0.5, "11111": 0.5 }, "tolerance": 0.001 }
+    },
+    {
+      "circuit": "seeds/circuits/bernstein-vazirani-4.qasm",
+      "expect": { "probabilities": { "101": 1.0 }, "tolerance": 0.001 }
+    },
+    {
+      "circuit": "seeds/circuits/vqe-h2-ansatz.qasm",
+      "params": { "theta": -0.2236813969 },
+      "budgets": { "num_qubits": 2, "depth": 3, "two_qubit_gate_count": 1 }
+    },
+    {
+      "circuit": "seeds/circuits/qaoa-maxcut-triangle.qasm",
+      "params": { "gamma": 1.8785555922, "beta": 1.2630370614 },
+      "budgets": { "num_qubits": 3, "depth": 11, "two_qubit_gate_count": 6, "t_count": 0 }
+    }
+  ]
+}

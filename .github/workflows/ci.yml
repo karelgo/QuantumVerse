@@ -47,6 +47,25 @@ jobs:
       - name: Build (wasm)
         run: cargo build --manifest-path sim/Cargo.toml --release --target wasm32-unknown-unknown
 
+  quantum-ci:
+    name: quantum ci on the seed library (dogfood)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e ./client
+      - name: Budgets, golden equivalence, expected distributions
+        run: qv ci --config quantumverse.ci.json
+      - name: Seed import smoke test (local registry)
+        run: |
+          export QV_HOME="$RUNNER_TEMP/qvhome"
+          python seeds/import.py --with-capsule
+          qv pull qv:seeds/bell -o "$RUNNER_TEMP/bell-out"
+          test -f "$RUNNER_TEMP/bell-out/circuit.qasm"
+
   spec:
     name: spec (schemas valid, vendored copies in sync)
     runs-on: ubuntu-latest
