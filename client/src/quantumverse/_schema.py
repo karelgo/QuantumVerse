@@ -15,6 +15,7 @@ SCHEMA_NAMES = {
     "mitigation": "mitigation.schema.json",
     "circuit-card": "circuit-card.schema.json",
     "device-record": "device-record.schema.json",
+    "signature": "signature.schema.json",
 }
 
 

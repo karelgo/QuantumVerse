@@ -233,6 +233,41 @@ def test_capsule_lookup_errors(client):
     assert client.get("/api/v1/capsules/abcdef").status_code == 404
 
 
+def test_signed_capsule_reports_trust_level(client, tmp_path, monkeypatch):
+    from quantumverse.signing import generate_keypair, sign_files
+
+    monkeypatch.setenv("QV_HOME", str(tmp_path / "qvhome"))
+    generate_keypair("default")
+
+    capsule = _bell_capsule()
+    signed = Capsule(sign_files(capsule.files, capsule.id, signer="qv:users/api-test"))
+    response = client.post("/api/v1/capsules", json=_capsule_payload(signed))
+    assert response.status_code == 201
+    body = response.json()
+    assert body["trust"] == 1
+    assert "author-signed" in body["trust_detail"]
+
+    hexid = capsule.id.split(":", 1)[1]
+    assert client.get(f"/api/v1/capsules/{hexid[:8]}").json()["trust"] == 1
+    assert client.get("/api/v1/capsules").json()["capsules"][0]["trust"] == 1
+
+
+def test_invalid_signature_rejected_by_registry(client, tmp_path, monkeypatch):
+    from quantumverse.signing import generate_keypair, sign_files
+
+    monkeypatch.setenv("QV_HOME", str(tmp_path / "qvhome"))
+    generate_keypair("default")
+
+    capsule = _bell_capsule()
+    files = sign_files(capsule.files, capsule.id)
+    doc = json.loads(files["author.sig"])
+    doc["signature"] = "A" * 86 + "=="  # structurally plausible, cryptographically wrong
+    files["author.sig"] = json.dumps(doc).encode()
+    response = client.post("/api/v1/capsules", json=_capsule_payload(Capsule(files)))
+    assert response.status_code == 422
+    assert any("signature-invalid" in e for e in response.json()["detail"]["errors"])
+
+
 # -- devices (RFC-0004) -------------------------------------------------------
 
 DEVICE_RECORD = {

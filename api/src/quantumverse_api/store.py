@@ -85,6 +85,9 @@ class Store:
         self._lock = threading.Lock()
         with self._connect() as conn:
             conn.executescript(_SCHEMA)
+            columns = {r["name"] for r in conn.execute("PRAGMA table_info(capsules)")}
+            if "trust" not in columns:  # pre-signing databases
+                conn.execute("ALTER TABLE capsules ADD COLUMN trust INTEGER NOT NULL DEFAULT 0")
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
@@ -249,13 +252,15 @@ class Store:
 
     # -- capsules ---------------------------------------------------------------
 
-    def put_capsule(self, capsule_id: str, files: dict[str, bytes], title: str) -> str:
+    def put_capsule(
+        self, capsule_id: str, files: dict[str, bytes], title: str, trust: int = 0
+    ) -> str:
         hexid = capsule_id.split(":", 1)[1]
         file_digests = {path: self.put_blob(data) for path, data in files.items()}
         with self._lock, self._connect() as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO capsules (hexid, files, title) VALUES (?, ?, ?)",
-                (hexid, json.dumps(file_digests, sort_keys=True), title),
+                "INSERT OR REPLACE INTO capsules (hexid, files, title, trust) VALUES (?, ?, ?, ?)",
+                (hexid, json.dumps(file_digests, sort_keys=True), title, trust),
             )
         self._link_capsule_calibration(capsule_id, files)
         return capsule_id
@@ -302,7 +307,7 @@ class Store:
     def get_capsule(self, hexid_prefix: str) -> dict:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT hexid, files, title, created FROM capsules WHERE hexid LIKE ?",
+                "SELECT hexid, files, title, created, trust FROM capsules WHERE hexid LIKE ?",
                 (hexid_prefix + "%",),
             ).fetchall()
         if not rows:
@@ -317,15 +322,21 @@ class Store:
             "files": json.loads(row["files"]),
             "title": row["title"],
             "created": row["created"],
+            "trust": row["trust"],
         }
 
     def list_capsules(self) -> list[dict]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT hexid, title, created FROM capsules ORDER BY created DESC, hexid"
+                "SELECT hexid, title, created, trust FROM capsules ORDER BY created DESC, hexid"
             ).fetchall()
         return [
-            {"id": f"sha256:{r['hexid']}", "title": r["title"], "created": r["created"]}
+            {
+                "id": f"sha256:{r['hexid']}",
+                "title": r["title"],
+                "created": r["created"],
+                "trust": r["trust"],
+            }
             for r in rows
         ]
 

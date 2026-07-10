@@ -209,6 +209,8 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
 
     @app.post("/api/v1/capsules", status_code=201)
     def push_capsule(body: CapsuleUpload) -> dict:
+        from quantumverse.signing import trust_level
+
         files = {path: entry.to_bytes() for path, entry in body.files.items()}
         capsule = Capsule(files)
         findings = capsule.validate()
@@ -216,10 +218,13 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
         if errors:
             raise HTTPException(422, {"detail": "capsule is invalid", "errors": errors})
         manifest = capsule.manifest
-        store.put_capsule(capsule.id, files, title=manifest.get("title", ""))
+        level, trust_detail = trust_level(files, capsule.id)
+        store.put_capsule(capsule.id, files, title=manifest.get("title", ""), trust=level)
         return {
             "id": capsule.id,
             "short_id": capsule.short_id,
+            "trust": level,
+            "trust_detail": trust_detail,
             "warnings": [str(f) for f in findings if f.severity == "warning"],
         }
 

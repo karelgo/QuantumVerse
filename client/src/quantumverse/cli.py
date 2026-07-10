@@ -18,6 +18,7 @@ from .hub import ARTIFACT_TYPES, load, push
 from .qasm import QasmError, parse_qasm
 from .devices import RECORD_VERSION, DeviceRecordError
 from .registry import RegistryError, get_registry
+from .signing import SigningError, generate_keypair, key_info, sign_files, trust_level
 from .simulator import SimulatorError, run
 from .uris import QvUriError, VersionError, parse_uri
 from .verify import (
@@ -84,6 +85,47 @@ def _cmd_capsule_validate(args: argparse.Namespace) -> int:
 
 def _cmd_capsule_inspect(args: argparse.Namespace) -> int:
     print(Capsule.load(args.path).inspect())
+    return 0
+
+
+def _cmd_capsule_sign(args: argparse.Namespace) -> int:
+    capsule = Capsule.load(args.path)
+    errors = [f for f in capsule.validate() if f.severity == "error"]
+    if errors:
+        for finding in errors:
+            print(finding)
+        print("refusing to sign an invalid capsule")
+        return 1
+    capsule.files = sign_files(
+        capsule.files, capsule.id, key_name=args.key, signer=args.signer
+    )
+    out = Path(args.output) if args.output else Path(args.path)
+    if out.is_dir() or (not out.exists() and not str(out).endswith(".tar")):
+        capsule.write_dir(out)
+    else:
+        capsule.write_tar(out)
+    level, description = trust_level(capsule.files, capsule.id)
+    print(f"signed capsule/{capsule.short_id} — {description}")
+    print(f"wrote {out}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# key commands
+# ---------------------------------------------------------------------------
+
+
+def _cmd_key_generate(args: argparse.Namespace) -> int:
+    info = generate_keypair(args.name)
+    print(f"generated key {info['name']!r}")
+    print(f"  key id:     {info['key_id']}")
+    print(f"  public key: {info['public_key']}")
+    print("publish the key id on your profile so signatures bind to you (RFC-0001)")
+    return 0
+
+
+def _cmd_key_show(args: argparse.Namespace) -> int:
+    print(json.dumps(key_info(args.name), indent=2, sort_keys=True))
     return 0
 
 
@@ -398,6 +440,16 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ci.add_argument("path", metavar="PATH", help="capsule directory or tar")
     p_ci.set_defaults(func=_cmd_capsule_inspect)
 
+    p_cs = capsule_sub.add_parser(
+        "sign", help="attach an author signature (trust level 1) to a valid capsule"
+    )
+    p_cs.add_argument("path", metavar="PATH", help="capsule directory or tar")
+    p_cs.add_argument("--key", default="default", help="key name (default: 'default')")
+    p_cs.add_argument("--signer", metavar="QV_URI", help="identity claim, e.g. qv:users/you")
+    p_cs.add_argument("-o", "--output", metavar="OUT.tar|OUT/",
+                      help="write elsewhere instead of in place")
+    p_cs.set_defaults(func=_cmd_capsule_sign)
+
     p_cr = capsule_sub.add_parser(
         "replay", help="L1 replay: re-simulate the capsule's circuit and diff distributions"
     )
@@ -446,6 +498,19 @@ def _build_parser() -> argparse.ArgumentParser:
     p_qci.add_argument("--config", default="quantumverse.ci.json",
                        metavar="FILE", help="CI config (default: quantumverse.ci.json)")
     p_qci.set_defaults(func=_cmd_ci)
+
+    # qv key ...
+    p_key = sub.add_parser("key", help="manage Ed25519 signing keys")
+    p_key.set_defaults(func=lambda _args: (p_key.print_help(), 2)[1])
+    key_sub = p_key.add_subparsers(dest="key_command", metavar="ACTION")
+
+    p_kg = key_sub.add_parser("generate", help="generate a new keypair under ~/.qv/keys")
+    p_kg.add_argument("--name", default="default", help="key name (default: 'default')")
+    p_kg.set_defaults(func=_cmd_key_generate)
+
+    p_ks = key_sub.add_parser("show", help="print a key's public info (id, public key)")
+    p_ks.add_argument("--name", default="default", help="key name (default: 'default')")
+    p_ks.set_defaults(func=_cmd_key_show)
 
     # qv device ...
     p_device = sub.add_parser("device", help="register and inspect devices (RFC-0004)")
@@ -527,6 +592,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         RegistryError,
         VerifyError,
         DeviceRecordError,
+        SigningError,
         FileNotFoundError,
         ValueError,
         KeyError,

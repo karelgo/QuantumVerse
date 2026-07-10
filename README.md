@@ -23,6 +23,7 @@ qv run seeds/circuits/grover-2q.qasm --shots 1024
 qv diff old.qasm new.qasm               # semantic diff: equivalence up to global phase
 qv ci --config quantumverse.ci.json     # quantum CI: budgets + golden refs + distributions
 qv capsule create --circuit … && qv capsule replay …   # RFC-0001 capsules, L1 replay
+qv key generate && qv capsule sign cap.tar             # author signature — trust level 1
 qv device show qv:device/quantumverse/qv-sim           # Device Cards (RFC-0004)
 qv device drift quantumverse/qv-sim                    # calibration timeline, fed by capsules
 ```

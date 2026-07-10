@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantumverse.dev/spec/schemas/signature.schema.json",
+  "title": "Capsule signature file — author.sig / receipt.sig (RFC-0001)",
+  "type": "object",
+  "required": ["algorithm", "key_id", "public_key", "signature", "signed"],
+  "additionalProperties": false,
+  "properties": {
+    "algorithm": { "const": "ed25519" },
+    "key_id": {
+      "description": "sha256 digest of the raw 32-byte public key.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "public_key": {
+      "description": "Raw 32-byte Ed25519 public key, base64 (44 chars incl. padding).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{43}=$"
+    },
+    "signature": {
+      "description": "64-byte Ed25519 signature over the ASCII bytes of the capsule id, base64.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{86}==$"
+    },
+    "signed": { "type": "string", "format": "date-time" },
+    "signer": {
+      "description": "Optional identity claim; binding is established by the key published on this profile (author.sig) or the provider key registry (receipt.sig).",
+      "type": "string",
+      "pattern": "^qv:(users/[a-z0-9][a-z0-9-]*|device/[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*)$"
+    }
+  }
+}

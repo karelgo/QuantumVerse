@@ -44,6 +44,7 @@ capsule/
 ├── execution.json          # REQUIRED  shots, raw counts, timestamps, job IDs
 ├── mitigation.json         # OPTIONAL  error-mitigation pipeline, exactly as applied
 ├── environment.lock        # REQUIRED  framework + SDK versions (pip-freeze style)
+├── author.sig              # OPTIONAL  author signature (trust level 1)
 └── receipt.sig             # OPTIONAL  provider-signed execution receipt
 ```
 
@@ -161,6 +162,28 @@ Two independent signatures may accompany a capsule; each is an Ed25519 signature
 | 2 | **Provider-verified** | `receipt.sig` from the hardware provider attests that this compiled circuit ran on this backend at this time with these results |
 
 `receipt.sig` contains the provider's signature plus its key identifier. Provider participation is the Phase-3 partnership ask in the [roadmap](../VISION.md#10-roadmap); until then, level-1 capsules with public job IDs offer spot-checkability. **Leaderboard badge tiers map directly onto these levels** — a "verified" leaderboard entry means level 2.
+
+### Signature file format
+
+`author.sig` and `receipt.sig` share one canonical-JSON format, validated by [`spec/schemas/signature.schema.json`](../spec/schemas/signature.schema.json):
+
+```json
+{
+  "algorithm": "ed25519",
+  "key_id": "sha256:1f5c…",
+  "public_key": "base64(raw 32-byte public key)",
+  "signature": "base64(Ed25519 signature over the ASCII bytes of the capsule id)",
+  "signed": "2026-07-10T14:40:00Z",
+  "signer": "qv:users/aresearcher"
+}
+```
+
+Rules:
+
+- The message signed is the ASCII byte string of the capsule id (`sha256:<hex>`), so a signature covers the entire content-addressed capsule.
+- Signature files are **never listed in `manifest.files`** and do not contribute to the capsule id — a capsule's identity is its contents, not its endorsements. Adding or removing a signature does not change what capsule it is.
+- `key_id` is the SHA-256 digest of the raw public key. Verifiers MUST (a) recompute the capsule id, (b) verify the signature against the embedded `public_key`, and (c) check `key_id` matches that key. The embedded key makes verification self-contained; *trust* in the key comes from its binding to a profile (author) or the provider key registry (receipt) — see Open Questions §5.
+- `signer` is a claim, not a proof, until the referenced profile publishes the matching `key_id`.
 
 Trust levels attest *provenance*, not *correctness*: a provider receipt proves the circuit ran and returned these counts, not that the interpretation in a paper is sound.
 

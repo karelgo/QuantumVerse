@@ -33,8 +33,13 @@ FILE_ORDER = [
     "execution.json",
     "mitigation.json",
     "environment.lock",
+    "author.sig",
     "receipt.sig",
 ]
+
+# Signature files are never content-addressed: a capsule's identity is its
+# contents, not its endorsements (RFC-0001).
+_SIGNATURE_FILES = ("author.sig", "receipt.sig")
 
 _JSON_PAYLOADS = {"device.json", "execution.json", "mitigation.json"}
 _TEXT_PAYLOADS = {"circuit.qasm", "compiled.qasm", "environment.lock"}
@@ -264,9 +269,12 @@ class Capsule:
         if not isinstance(manifest_files, dict):
             manifest_files = {}
 
-        # receipt.sig may accompany a capsule but is never content-addressed.
-        if "receipt.sig" in manifest_files:
-            err("receipt-listed", "receipt.sig must never be listed in manifest.files")
+        for sig_name in _SIGNATURE_FILES:
+            if sig_name in manifest_files:
+                err(
+                    "signature-listed",
+                    f"{sig_name} must never be listed in manifest.files",
+                )
 
         # id recomputation
         cid = manifest.get("id")
@@ -333,10 +341,28 @@ class Capsule:
 
         # extra payload files not accounted for by the manifest
         for name in sorted(self.files):
-            if name in ("manifest.json", "receipt.sig"):
+            if name == "manifest.json" or name in _SIGNATURE_FILES:
                 continue
             if name not in manifest_files:
                 err("file-extra", f"{name} is present but not listed in manifest.files")
+
+        # signature files, when present, must verify over the capsule id
+        capsule_id = manifest.get("id")
+        if isinstance(capsule_id, str) and capsule_id:
+            from .signing import check_signature
+
+            for sig_name in _SIGNATURE_FILES:
+                raw = self.files.get(sig_name)
+                if raw is None:
+                    continue
+                try:
+                    sig_doc = json.loads(raw.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                    err("signature-unparseable", f"{sig_name} is not valid JSON: {exc}")
+                    continue
+                reason = check_signature(sig_doc, capsule_id)
+                if reason is not None:
+                    err("signature-invalid", f"{sig_name}: {reason}")
 
         # per-file schema validation
         device = parsed_json.get("device.json")
@@ -467,11 +493,9 @@ class Capsule:
         replay_of = manifest.get("replay_of")
         lines.append(f"  replay of: {replay_of or 'none (original run)'}")
 
-        trust = (
-            "level 2 candidate (provider receipt present, signature not verified here)"
-            if "receipt.sig" in self.files
-            else "level 0 (unsigned)"
-        )
+        from .signing import trust_level
+
+        _, trust = trust_level(self.files, manifest.get("id", ""))
         lines.append(f"  trust:    {trust}")
 
         lines.append("  files:")
@@ -480,7 +504,7 @@ class Capsule:
             if name in self.files:
                 if name == "manifest.json":
                     digest = "(identity: hashes to the capsule id)"
-                elif name == "receipt.sig":
+                elif name in _SIGNATURE_FILES:
                     digest = "(signature; never content-addressed)"
                 else:
                     digest = listed.get(name, "(NOT IN MANIFEST)")
