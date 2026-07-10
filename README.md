@@ -6,7 +6,7 @@ GitHub gave code a home. Hugging Face gave models a home. Quantum computing — 
 
 QuantumVerse is the missing layer: an open, community-owned platform for publishing, discovering, running, and **verifying** quantum work.
 
-📖 **Read the full vision:** [VISION.md](VISION.md) · 🔭 **What's beyond the pillars:** [FRONTIERS.md](FRONTIERS.md) · 📐 **First spec:** [RFC-0001](rfcs/rfc-0001-experiment-capsule.md) · 🌐 **Pitch site:** [`docs/index.html`](docs/index.html) (live via GitHub Pages)
+📖 **Read the full vision:** [VISION.md](VISION.md) · 🔭 **What's beyond the pillars:** [FRONTIERS.md](FRONTIERS.md) · 🔩 **Where the machines live:** [HARDWARE.md](HARDWARE.md) · 📐 **First spec:** [RFC-0001](rfcs/rfc-0001-experiment-capsule.md) · 🌐 **Pitch site:** [`docs/index.html`](docs/index.html) (live via GitHub Pages)
 
 ---
 
@@ -50,12 +50,15 @@ Every circuit page has a **Run** button — a WASM statevector simulator execute
 
 Once the artifact layer exists, new infrastructure becomes possible: the **Drift Observatory** (a public weather map of hardware calibration), **agent-native access** (an MCP server so AI assistants can search, load, and verify artifacts), **federation** (self-hosted instances syncing to the commons), the **verified Quantum CV**, and **capsule-backed publishing**. See [FRONTIERS.md](FRONTIERS.md).
 
+And the machines themselves become citizens, not just backends: a **Device Registry** (a profile page for every QPU — including the invisible long tail of lab-built machines running merchant hardware), **self-hosted Quantum CI runners** (the GitHub Actions model, applied to QPUs), a capsule-backed commissioning **"birth certificate"** for hardware procurement, and opt-in **fleet telemetry** for chip makers. See [HARDWARE.md](HARDWARE.md).
+
 ## Repository map
 
 | Path | What it is |
 |---|---|
 | [`VISION.md`](VISION.md) | The full whitepaper — the three pillars in depth |
 | [`FRONTIERS.md`](FRONTIERS.md) | The next ring of ideas beyond the pillars |
+| [`HARDWARE.md`](HARDWARE.md) | The hardware layer — where QPU makers and machine owners plug in |
 | [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) | The phased engineering plan — architecture, build-vs-reuse, exit gates |
 | [`COMPETITIVE-LANDSCAPE.md`](COMPETITIVE-LANDSCAPE.md) | Honest map of adjacent projects and where the whitespace is |
 | [`rfcs/`](rfcs/) | Open specifications, developed by public RFC |

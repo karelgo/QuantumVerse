@@ -84,6 +84,18 @@ The standardized inputs a verified leaderboard would run — these are content t
 
 ---
 
+## F. Device identity & the hardware long tail
+
+Who hosts the public record of a *machine*? Today: nobody, for most machines.
+
+- **Vendor status pages** (IBM Quantum, IonQ, Rigetti…) show live calibration for **their own fleet only** — snapshots, not history, and gone the moment a device retires.
+- **Aggregator device lists** (qBraid, Strangeworks, Braket, Azure) enumerate **what's rentable through them** — a commercial catalog, not an identity layer, and blind to anything off-cloud.
+- **The merchant-hardware installed base is invisible.** [QuantWare](https://quantware.com/) alone has shipped QPUs to 50+ customers in 20 countries — labs building their *own* machines. Those devices appear on no list anywhere: no public identity, no benchmark record, no calibration lineage.
+
+There is no vendor-neutral registry of quantum devices, no per-machine verified history, and no standard for capsule-backed commissioning/acceptance results. That's the whitespace [HARDWARE.md](HARDWARE.md) claims — the Device Registry, self-hosted runners, and the birth certificate — and it's uncontested for the same reason trained-parameters was: it only makes sense on top of an artifact + verification layer that doesn't exist yet elsewhere.
+
+---
+
 ## The whitespace
 
 Laid out as a matrix, the gap is obvious — every competitor owns one column:

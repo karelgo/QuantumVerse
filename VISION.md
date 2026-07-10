@@ -60,6 +60,7 @@ A QuantumVerse repo isn't a folder of files; it's a **typed artifact** with stru
 | **Noise Models** | Learned or measured device noise models | Realistic simulation without QPU access |
 | **Compiled Circuits** | Hardware-specific transpilations with verified resource counts | Transpilation is expensive compute; share the result like Docker layers |
 | **Experiment Capsules** | A complete, replayable experimental record (Pillar II) | The reproducibility primitive |
+| **Devices** | A physical QPU's identity, topology, native gates, and calibration lineage — its **Device Card** | Machines become citable, comparable citizens of the platform, not just backends ([HARDWARE.md](HARDWARE.md)) |
 
 ### The Circuit Card
 
@@ -195,6 +196,8 @@ QuantumVerse complements the frameworks and hardware providers — it's the laye
 
 **[QCR](https://qcrepository.org/)** is the closest analog — a multi-framework catalog to share and reproduce circuits — but it stops at a curated index: no in-browser run, no verification, no trained parameters, no social graph. **PennyLane Datasets** hosts real quantum data (molecules, spin systems, Hamiltonians, some parameters), but team-curated and framework-centric, not a community hub. **Metriq** (Unitary Foundation) is the biggest overlap with our verification pillar and is more automated than a submissions box — `metriq-gym` dispatches benchmarks to real hardware — but it's scoped to benchmarks, not general artifacts; we'd integrate it, not fragment it. And crucially, the Capsule concept is **not new**: academic provenance systems like **[QProv](https://github.com/UST-QuAntiL/qprov)** and schemas like **QC-MM** already model the `{circuit, device, compilation, execution}` bundle — our contribution is turning that into a content-addressed, citable, forkable artifact with a platform around it. The aggregators sell *access*; we host *artifacts* and route execution through them, making them partners rather than rivals.
 
+Hardware companies get the same treatment, deepened: they are **publishers, not just backends**. A full-stack vendor like IonQ gains the neutral credibility no self-published metric can buy; a merchant foundry like QuantWare — whose processors run in dozens of customer-built machines the software world can't even see — gains a public registry for its installed base. The Device Registry, self-hosted CI runners, the commissioning "birth certificate," and fleet telemetry are specified in [HARDWARE.md](HARDWARE.md).
+
 *Full sourced analysis, including in-browser tools (IBM Composer, Quirk) and benchmark suites (MQT Bench, QASMBench, SupermarQ): [COMPETITIVE-LANDSCAPE.md](COMPETITIVE-LANDSCAPE.md).*
 
 ---
@@ -243,4 +246,4 @@ Code found its home. Models found their home. **Quantum is next.**
 
 ---
 
-*Beyond the three pillars: [FRONTIERS.md](FRONTIERS.md) sketches the next ring of ideas — the Drift Observatory, agent-native access, federation, the verified Quantum CV, and capsule-backed publishing.*
+*Beyond the three pillars: [FRONTIERS.md](FRONTIERS.md) sketches the next ring of ideas — the Drift Observatory, agent-native access, federation, the verified Quantum CV, and capsule-backed publishing. [HARDWARE.md](HARDWARE.md) extends the platform to the machines themselves — the Device Registry, self-hosted QPU runners, and the hardware vendors' seat at the table.*

@@ -305,6 +305,16 @@ nav.top-nav a:hover { color: var(--accent); }
 .drift svg { display: block; width: 100%; height: auto; }
 .drift .d-readout { font-family: var(--mono); font-size: .7rem; color: var(--muted); margin-top: 8px; min-height: 1.2em; }
 .drift .d-readout b { color: var(--ink); font-weight: 500; }
+
+/* ---------- hardware ---------- */
+.device-card .dc-name { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; margin: 6px 0 2px; }
+.device-card .dc-uri { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-bottom: 10px; }
+.device-card .dc-row { display: flex; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-family: var(--mono); font-size: .72rem; }
+.device-card .dc-row:last-of-type { border-bottom: none; }
+.device-card .dc-key { color: var(--muted); white-space: nowrap; }
+.device-card .dc-val { color: var(--ink); text-align: right; }
+.device-card .dc-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.device-card .dc-badge { font-family: var(--mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--good); border: 1px solid var(--good); border-radius: 999px; padding: 3px 10px; }
 @media (max-width: 960px) { .frontiers-featured { grid-template-columns: 1fr; } }
 @media (max-width: 620px) { .frontier-grid { grid-template-columns: 1fr; } }
 
@@ -361,6 +371,7 @@ h2.section-title { font-size: clamp(1.65rem, 3.2vw, 2.3rem); font-weight: 600; }
       <a href="#compare">Compare</a>
       <a href="#why">Why now</a>
       <a href="#frontiers">Frontiers</a>
+      <a href="#hardware">Hardware</a>
       <a href="#roadmap">Roadmap</a>
       <a href="https://github.com/karelgo/QuantumVerse">GitHub ↗</a>
     </nav>
@@ -650,6 +661,71 @@ H = qv.load(<span class="st">"instances/lih-sto3g"</span>)</div>
   </div>
 </section>
 
+<!-- ============ HARDWARE ============ -->
+<section id="hardware">
+  <div class="wrap">
+    <p class="eyebrow">The hardware layer</p>
+    <h2 class="section-title">A profile page for every machine.</h2>
+
+    <div class="frontiers-featured">
+      <div>
+        <span class="ff-tag">Hardware as publisher, not just backend</span>
+        <h3>The industry's fastest-growing fleet is invisible.</h3>
+        <p>Full-stack vendors like IonQ sell access to machines the whole world can see. But merchant foundries like QuantWare have shipped QPUs to <strong>50+ customers in 20 countries</strong> — labs building their <em>own</em> quantum computers. Those machines are on no cloud, no aggregator list, no leaderboard: real hardware with no public identity, no benchmark record, no calibration history. QuantumVerse gives every physical QPU a home — a <strong>Device Card</strong> that is to a machine what a Circuit Card is to a circuit.</p>
+      </div>
+      <div>
+        <div class="drift device-card">
+          <div class="d-head">
+            <span class="d-title">Device Card</span>
+            <span class="d-sub">illustrative</span>
+          </div>
+          <div class="dc-name">aurora-64 · TU Delft Quantum Lab</div>
+          <div class="dc-uri">qv:device/tudelft/aurora-64</div>
+          <div class="dc-row"><span class="dc-key">modality</span><span class="dc-val">superconducting transmon</span></div>
+          <div class="dc-row"><span class="dc-key">qubits</span><span class="dc-val">64 · heavy-square lattice</span></div>
+          <div class="dc-row"><span class="dc-key">lineage</span><span class="dc-val">VIO architecture · KiloFab batch 27</span></div>
+          <div class="dc-row"><span class="dc-key">commissioned</span><span class="dc-val">2027-03</span></div>
+          <div class="dc-row"><span class="dc-key">median T1</span><span class="dc-val">112 µs · 78th pct for generation</span></div>
+          <div class="dc-row"><span class="dc-key">verified capsules</span><span class="dc-val">1,204</span></div>
+          <div class="dc-badges">
+            <span class="dc-badge">✓ birth certificate</span>
+            <span class="dc-badge">runner active</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frontier-grid">
+      <div class="frontier-card">
+        <span class="fc-tag">Hardware 01</span>
+        <h4>The Device Registry</h4>
+        <p>A vendor-neutral registry of physical QPUs — cloud-hosted or homebuilt. Identity, topology, native gates, chip lineage, per-machine calibration timeline, and every verified capsule ever minted on it. Machines become citable: <em>"runs were performed on qv:device/…"</em>.</p>
+        <span class="fc-loop">compounds the <b>credibility</b> &amp; <b>status</b> loops</span>
+      </div>
+      <div class="frontier-card">
+        <span class="fc-tag">Hardware 02</span>
+        <h4>Self-hosted QPU runners</h4>
+        <p>The GitHub Actions runner model, applied to hardware: labs register their machines to accept benchmark and CI jobs in idle time, returning signed capsules. Owners get continuous public proof their machine works; the platform gets a real fleet without owning a fridge.</p>
+        <span class="fc-loop">compounds the <b>reuse</b> &amp; <b>credibility</b> loops</span>
+      </div>
+      <div class="frontier-card">
+        <span class="fc-tag">Hardware 03</span>
+        <h4>The birth certificate</h4>
+        <p>A standardized, capsule-backed commissioning suite every new machine runs on day one — the vendor-neutral nutrition label QPU procurement is missing. Buyers write it into contracts; foundries ship it with every processor: <em>verified on QuantumVerse</em>.</p>
+        <span class="fc-loop">compounds the <b>credibility</b> loop, upstream into procurement</span>
+      </div>
+      <div class="frontier-card">
+        <span class="fc-tag">Hardware 04</span>
+        <h4>Fleet telemetry</h4>
+        <p>The Drift Observatory's B2B face: opt-in, owner-controlled, aggregated field data on how a vendor's chips behave across the installed base. Labs get fleet-relative context; chip makers get the fab-to-field feedback loop no one can build alone.</p>
+        <span class="fc-loop">compounds the <b>reuse</b> loop, at the silicon level</span>
+      </div>
+    </div>
+
+    <p class="small-enough">Neither archetype is asked to change its business. The cloud vendor keeps selling access — and gains the neutral credibility no self-published metric can buy. The foundry keeps selling processors — and its customers' machines finally become visible, provable, and comparable. The platform sells neither; it makes both <strong>legible</strong>. Full design in <a href="https://github.com/karelgo/QuantumVerse#beyond-the-pillars">HARDWARE.md</a>.</p>
+  </div>
+</section>
+
 <!-- ============ ROADMAP ============ -->
 <section id="roadmap">
   <div class="wrap">
@@ -692,7 +768,7 @@ H = qv.load(<span class="st">"instances/lih-sto3g"</span>)</div>
       </div>
       <div class="ask-item">
         <h3>Framework &amp; hardware teams</h3>
-        <p>Talk to us about interchange formats and signed receipts. Neutral infrastructure only works if it's actually neutral.</p>
+        <p>Talk to us about interchange formats, signed receipts, and Device Cards for your machines. Neutral infrastructure only works if it's actually neutral.</p>
       </div>
       <div class="ask-item">
         <h3>Educators</h3>
