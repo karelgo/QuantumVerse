@@ -4,7 +4,7 @@ The reference QuantumVerse registry server: artifacts (RFC-0003 addressing, RFC-
 
 ```bash
 pip install -e ../client -e .
-qv-registry --data ./data --web ../web --port 8000
+qv-registry --data ./data --web ../playground --port 8000
 ```
 
 Then, from anywhere:
@@ -15,4 +15,4 @@ qv push bell.qasm qv:demo/bell --type circuit --version 1.0.0
 qv pull qv:demo/bell
 ```
 
-The HTTP mapping is normative in [RFC-0003](../rfcs/rfc-0003-artifact-addressing.md); the `quantumverse` client's `RemoteRegistry` is the reference consumer. `--web ../web` additionally serves the in-browser playground at `/`.
+The HTTP mapping is normative in [RFC-0003](../rfcs/rfc-0003-artifact-addressing.md); the `quantumverse` client's `RemoteRegistry` is the reference consumer. `--web ../playground` additionally serves the in-browser playground at `/`.

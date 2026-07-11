@@ -20,13 +20,13 @@ qv ci --config quantumverse.ci.json        # the repo's own Quantum CI
 
 # WASM rebuild after touching sim/src/lib.rs (the built binary is committed):
 (cd sim && cargo build --release --target wasm32-unknown-unknown \
-  && cp target/wasm32-unknown-unknown/release/qv_sim.wasm ../web/qv_sim.wasm)
+  && cp target/wasm32-unknown-unknown/release/qv_sim.wasm ../playground/qv_sim.wasm)
 ```
 
 Run the full stack locally:
 
 ```bash
-qv-registry --data ./data --web ./web --port 8000 &
+qv-registry --data ./data --web ./playground --port 8000 &
 python seeds/import.py --registry http://127.0.0.1:8000 --with-capsule
 open http://127.0.0.1:8000        # the playground, browsing the live registry
 ```

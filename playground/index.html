@@ -406,7 +406,7 @@ async function buildLibrary() {
     note = `${items.length} circuits from the live registry`;
   } catch {
     items = EXAMPLES;
-    note = 'no registry reachable — built-in examples (run qv-registry --web web/ for the live library)';
+    note = 'no registry reachable — built-in examples (run qv-registry --web playground/ for the live library)';
   }
   lib.innerHTML = '';
   const buttons = {};

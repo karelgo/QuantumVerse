@@ -3,7 +3,7 @@
 A dense statevector simulator for the QuantumVerse **shared OpenQASM 3 subset**,
 written in Rust. It builds natively (for tests and embedding) and to
 `wasm32-unknown-unknown` **without wasm-bindgen** — the playground in
-[`web/`](../web/) talks to it over a small manual C-style ABI.
+[`playground/`](../playground/) talks to it over a small manual C-style ABI.
 
 - **Convention** (identical to the Python client): little-endian — qubit 0 is
   the least-significant bit of the state index; rendered bitstrings are
@@ -21,10 +21,10 @@ written in Rust. It builds natively (for tests and embedding) and to
 cd sim
 cargo test                                          # native test suite
 cargo build --release --target wasm32-unknown-unknown
-cp target/wasm32-unknown-unknown/release/qv_sim.wasm ../web/qv_sim.wasm
+cp target/wasm32-unknown-unknown/release/qv_sim.wasm ../playground/qv_sim.wasm
 ```
 
-The built `web/qv_sim.wasm` is committed on purpose: it is the engine of the
+The built `playground/qv_sim.wasm` is committed on purpose: it is the engine of the
 GitHub-Pages playground, which has no build step. **Re-run the two commands
 above and re-copy whenever `src/lib.rs` changes.**
 
@@ -48,7 +48,7 @@ above and re-copy whenever `src/lib.rs` changes.**
 
 - `shots` and `seed` may be `null`/omitted. `want_statevector` defaults to `false`.
 - Angles (`p`) are already-evaluated `f64` radians — expression evaluation
-  (`pi/2`, bound parameters, …) happens in the caller (`web/qasm.js` or the
+  (`pi/2`, bound parameters, …) happens in the caller (`playground/qasm.js` or the
   Python client).
 - Operand order for controlled gates: **controls first, target last**
   (`cx` = `[control, target]`, `ccx` = `[c0, c1, target]`,
@@ -87,7 +87,7 @@ above and re-copy whenever `src/lib.rs` changes.**
 | `qv_run` | `(ptr: *const u8, len: usize) -> *mut u8` | Run program JSON at `ptr..ptr+len`. |
 | `memory` | `WebAssembly.Memory` | The linear memory all pointers index into. |
 
-Call sequence (see `web/sim.js` for the reference wrapper):
+Call sequence (see `playground/sim.js` for the reference wrapper):
 
 1. UTF-8-encode the program JSON → `bytes`.
 2. `in = qv_alloc(bytes.length)`; copy `bytes` into `memory` at `in`.

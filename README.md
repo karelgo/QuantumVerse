@@ -14,7 +14,7 @@ QuantumVerse is the missing layer: an open, community-owned platform for publish
 python -m venv .venv && source .venv/bin/activate
 pip install -e client -e api
 
-qv-registry --data ./data --web ./web --port 8000 &   # registry + playground at :8000
+qv-registry --data ./data --web ./playground --port 8000 &   # registry + playground at :8000
 python seeds/import.py --registry http://127.0.0.1:8000 --with-capsule
 
 export QV_REGISTRY_URL=http://127.0.0.1:8000
@@ -94,7 +94,7 @@ And the machines themselves become citizens, not just backends: a **Device Regis
 | [`client/`](client/) | `quantumverse` Python package + `qv` CLI — capsules, cards, simulator, diff, CI, push/pull |
 | [`api/`](api/) | `qv-registry` — the reference registry server (FastAPI, SQLite, content-addressed blobs) |
 | [`sim/`](sim/) | Rust statevector simulator, built natively and to WASM (no wasm-bindgen) |
-| [`web/`](web/) | The in-browser **playground** (`index.html`) and the **hub** (`hub.html`) — browse artifacts, capsules, devices, and leaderboards over the live registry |
+| [`playground/`](playground/) | Zero-build in-browser **playground** (`index.html`) and **hub** (`hub.html`) — served by `qv-registry --web` over the live registry |
 | [`seeds/`](seeds/) | Starter library: 9 circuits, 2 instances, 2 **converged** trained-parameters artifacts |
 | [`quantumverse.ci.json`](quantumverse.ci.json) | This repo's own Quantum CI config (dogfooded in GitHub Actions) |
 | [`docs/`](docs/index.html) | The self-contained pitch site (served via GitHub Pages) |
