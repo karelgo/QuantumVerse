@@ -229,7 +229,7 @@ class Store:
     def get_version(self, namespace: str, name: str, version: str) -> dict:
         with self._connect() as conn:
             row = conn.execute(
-                """SELECT a.type, v.version, v.files, v.card
+                """SELECT a.type, v.version, v.files, v.card, v.created
                    FROM artifacts a JOIN versions v ON v.artifact_id = a.id
                    WHERE a.namespace=? AND a.name=? AND v.version=?""",
                 (namespace, name, version),
@@ -243,6 +243,7 @@ class Store:
             "version": row["version"],
             "files": json.loads(row["files"]),
             "card": json.loads(row["card"]) if row["card"] else None,
+            "created": row["created"],
         }
 
     def list_artifacts(self, type: Optional[str] = None) -> list[dict]:

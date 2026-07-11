@@ -408,6 +408,12 @@ def create_app(data_dir: Optional[str] = None, web_dir: Optional[str] = None) ->
     def federation_catalog() -> dict:
         return store.catalog()
 
+    # -- Next.js frontend seam (web/lib/api.ts shapes) -------------------------------
+
+    from .frontend import create_frontend_router
+
+    app.include_router(create_frontend_router(store))
+
     # -- static playground (optional) ----------------------------------------------
 
     web_dir = web_dir or os.environ.get("QV_WEB_DIR")
